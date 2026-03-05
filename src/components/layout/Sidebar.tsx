@@ -55,8 +55,8 @@ export default function Sidebar({
           onClick={() => onTabChange("missions")}
           badge={runningCount > 0 ? runningCount : undefined}
         />
-        <NavItem icon={<SkillsIcon />}  label="Skills"         active={activeTab === "skills"}   onClick={() => onTabChange("skills")} />
         <NavItem icon={<AgentsIcon />}  label="Agents"         active={activeTab === "agents"}   onClick={() => onTabChange("agents")} />
+        <NavItem icon={<SkillsIcon />}  label="Skills"         active={activeTab === "skills"}   onClick={() => onTabChange("skills")} />
       </nav>
 
       {/* Conversation history */}

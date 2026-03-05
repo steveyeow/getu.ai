@@ -25,6 +25,12 @@ export function useAriaChat(initialConversationId?: string) {
   // Do not remount the chat when selecting another conversation so in-flight streams
   // can finish and be persisted; when user comes back they see the full reply.
   useEffect(() => {
+    // If the parent is passing back the same conversationId we already set from the
+    // stream's conversationId event, skip the reset — the stream is still in-flight.
+    if (initialConversationId && initialConversationId === conversationId && streamActiveRef.current) {
+      return;
+    }
+
     streamActiveRef.current = false; // ignore any in-flight stream for the previous conversation
     if (!initialConversationId) {
       setMessages([]);
@@ -47,6 +53,7 @@ export function useAriaChat(initialConversationId?: string) {
       })
       .catch(() => { /* non-critical */ })
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialConversationId]);
 
   const sendMessage = useCallback(async (text: string) => {

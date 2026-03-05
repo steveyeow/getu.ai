@@ -7,7 +7,7 @@ import type {
   Conversation,
 } from "../../shared/types.js";
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const BASE = import.meta.env.VITE_API_URL ?? "";
 
 async function authHeaders(): Promise<HeadersInit> {
   const token = await getAuthToken();
