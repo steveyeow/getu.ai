@@ -23,7 +23,7 @@ const AGENT_COLOR: Record<string, string> = {
 interface Props { userId: string; onChat: () => void; }
 
 export default function MissionCenter({ userId, onChat }: Props) {
-  const { tasks, loading, pause, remove } = useTasks(userId);
+  const { tasks, loading, pause, remove, setPriority } = useTasks(userId);
   const [filter, setFilter]               = useState<TaskStatus | "all">("all");
   const [expanded, setExpanded]           = useState<string | null>(null);
 
@@ -119,6 +119,7 @@ export default function MissionCenter({ userId, onChat }: Props) {
                 onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
                 onPause={() => pause(task.id)}
                 onDelete={() => remove(task.id)}
+                onSetPriority={p => setPriority(task.id, p)}
               />
             ))}
           </div>
@@ -131,14 +132,15 @@ export default function MissionCenter({ userId, onChat }: Props) {
 // ── Task Card ─────────────────────────────────────────────────────────────────
 
 interface TaskCardProps {
-  task:     Task;
-  expanded: boolean;
-  onToggle: () => void;
-  onPause:  () => void;
-  onDelete: () => void;
+  task:         Task;
+  expanded:     boolean;
+  onToggle:     () => void;
+  onPause:      () => void;
+  onDelete:     () => void;
+  onSetPriority: (priority: number) => void;
 }
 
-function TaskCard({ task, expanded, onToggle, onPause, onDelete }: TaskCardProps) {
+function TaskCard({ task, expanded, onToggle, onPause, onDelete, onSetPriority }: TaskCardProps) {
   const agentColor  = AGENT_COLOR[task.agentName] ?? T.textMid;
   const statusColor = STATUS_COLOR[task.status];
   const isRunning   = task.status === "running";
@@ -185,6 +187,26 @@ function TaskCard({ task, expanded, onToggle, onPause, onDelete }: TaskCardProps
 
           {/* Result data summary */}
           {task.resultData && <ResultSummary data={task.resultData} />}
+
+          {/* Priority (pending/paused only) */}
+          {(task.status === "pending" || task.status === "paused") && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, fontFamily: T.mono, color: T.textDim }}>Priority</span>
+              {[1, 2, 3, 4, 5].map(p => (
+                <button
+                  key={p}
+                  onClick={() => onSetPriority(p)}
+                  style={{
+                    width: 28, height: 28, borderRadius: 6, border: `1px solid ${task.priority === p ? T.text : T.border}`,
+                    background: task.priority === p ? T.text : T.surface, color: task.priority === p ? "#fff" : T.textMid,
+                    fontSize: 12, fontWeight: 500, fontFamily: T.mono, cursor: "pointer",
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 6 }}>

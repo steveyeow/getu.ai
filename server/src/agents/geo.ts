@@ -268,10 +268,15 @@ Be precise, specific, and direct. Prioritize fixes by their impact on AI citatio
   tools = {}; // GEO agent uses direct HTTP checks, not an agentic tool loop
 
   protected async execute(input: AgentRunInput): Promise<AgentRunResult> {
-    // Extract URL from goal
-    const urlMatch = input.goal.match(/https?:\/\/[^\s\)\"\']+/);
-    if (!urlMatch) throw new Error("No URL found in task goal. Goal must include a full URL (https://...).");
-    const rawUrl  = urlMatch[0].replace(/\/$/, "");
+    // Extract URL from goal — the LLM must include the full URL when creating the task
+    const urlMatch = input.goal.match(/https?:\/\/[^\s\)\"\'\]<>]+/);
+    if (!urlMatch) {
+      throw new Error(
+        "No URL found in task goal. The goal must include the full website URL to audit (e.g. 'Audit https://getu.ai for GEO: ...'). " +
+        "Current goal: " + (input.goal.slice(0, 120) + (input.goal.length > 120 ? "…" : ""))
+      );
+    }
+    const rawUrl  = urlMatch[0].replace(/[.,;:)\]\'"]+$/, "").replace(/\/$/, "");
     const baseUrl = new URL(rawUrl).origin;
 
     // Fetch all resources in parallel

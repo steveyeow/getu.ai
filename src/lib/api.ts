@@ -160,8 +160,21 @@ export async function pauseTask(id: string): Promise<void> {
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  await fetch(`${BASE}/api/v1/tasks/${id}`, {
+  const res = await fetch(`${BASE}/api/v1/tasks/${id}`, {
     method:  "DELETE",
     headers: await authHeaders(),
   });
+  if (!res.ok) throw new Error("Failed to delete task");
+}
+
+export async function updateTaskPriority(id: string, priority: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/v1/tasks/${id}`, {
+    method:  "PATCH",
+    headers: { ...(await authHeaders()), "Content-Type": "application/json" },
+    body:    JSON.stringify({ priority }),
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error((j as { error?: string }).error ?? "Failed to update priority");
+  }
 }

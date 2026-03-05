@@ -25,6 +25,7 @@ export function startWorker(): Worker {
     "agent-tasks",
     async (job: Job<TaskJobData>) => {
       const { taskId, userId, agentName, goal } = job.data;
+      console.log(`[worker] Starting task ${taskId} (${agentName}) — goal length ${goal?.length ?? 0} chars`);
 
       // Load product profile for agent context
       const profile = await db.query.productProfiles.findFirst({
@@ -40,14 +41,19 @@ export function startWorker(): Worker {
       };
 
       // Route to the correct agent
+      let result;
       switch (agentName) {
         case "SCOUT":
-          return scout.run({ taskId, userId, goal, productProfile });
+          result = await scout.run({ taskId, userId, goal, productProfile });
+          break;
         case "GEO":
-          return geo.run({ taskId, userId, goal, productProfile });
+          result = await geo.run({ taskId, userId, goal, productProfile });
+          break;
         default:
           throw new Error(`Agent ${agentName} is not implemented yet`);
       }
+      console.log(`[worker] Task ${taskId} (${agentName}) completed`);
+      return result;
     },
     {
       connection,
@@ -56,7 +62,11 @@ export function startWorker(): Worker {
   );
 
   worker.on("failed", (job, err) => {
-    console.error(`Task job ${job?.id} failed:`, err.message);
+    console.error(`[worker] Task job ${job?.id} failed:`, err.message);
+  });
+
+  worker.on("error", (err) => {
+    console.error("[worker] Worker error (e.g. Redis connection):", err.message);
   });
 
   return worker;

@@ -18,10 +18,25 @@ export function useAriaChat(initialConversationId?: string) {
   const abortRef                            = useRef(false);
   // Tracks the id of the in-flight assistant message (added on first text chunk)
   const assistantIdRef                      = useRef<string | null>(null);
+  // When user switches conversation we stop applying in-flight stream updates to state
+  const streamActiveRef                     = useRef(false);
 
-  // Load history when opening an existing conversation
+  // When switching conversation (or opening one): sync state and load messages.
+  // Do not remount the chat when selecting another conversation so in-flight streams
+  // can finish and be persisted; when user comes back they see the full reply.
   useEffect(() => {
-    if (!initialConversationId) return;
+    streamActiveRef.current = false; // ignore any in-flight stream for the previous conversation
+    if (!initialConversationId) {
+      setMessages([]);
+      setConversationId(undefined);
+      setLoading(false);
+      setStreaming(false);
+      return;
+    }
+    setConversationId(initialConversationId);
+    setStreaming(false);
+    setLoading(true);
+    setMessages([]); // avoid showing previous conversation while loading
     getConversationMessages(initialConversationId)
       .then(msgs => {
         setMessages(msgs.map(m => ({
@@ -38,8 +53,9 @@ export function useAriaChat(initialConversationId?: string) {
     if (streaming || !text.trim()) return;
 
     setError(null);
-    abortRef.current  = false;
+    abortRef.current     = false;
     assistantIdRef.current = null;
+    streamActiveRef.current = true;
 
     // Optimistically add user message
     const userMsg: ChatMessage = { id: crypto.randomUUID(), role: "user", content: text };
@@ -48,7 +64,7 @@ export function useAriaChat(initialConversationId?: string) {
 
     try {
       await streamChat(text, conversationId, (event, data) => {
-        if (abortRef.current) return;
+        if (abortRef.current || !streamActiveRef.current) return;
 
         if (event === "conversationId") {
           setConversationId(data);
@@ -91,6 +107,7 @@ export function useAriaChat(initialConversationId?: string) {
       const id = assistantIdRef.current;
       if (id) setMessages(prev => prev.filter(m => m.id !== id));
     } finally {
+      streamActiveRef.current = false;
       setStreaming(false);
     }
   }, [streaming, conversationId]);

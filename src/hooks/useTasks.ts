@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase.js";
-import { getTasks, pauseTask, deleteTask } from "../lib/api.js";
+import { getTasks, pauseTask, deleteTask, updateTaskPriority } from "../lib/api.js";
 import type { Task } from "../../shared/types.js";
 
 // Loads tasks and subscribes to real-time updates via Supabase Realtime.
@@ -59,5 +59,10 @@ export function useTasks(userId: string) {
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  return { tasks, loading, error, refresh: load, pause, remove };
+  const setPriority = useCallback(async (id: string, priority: number) => {
+    await updateTaskPriority(id, priority);
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, priority } : t));
+  }, []);
+
+  return { tasks, loading, error, refresh: load, pause, remove, setPriority };
 }

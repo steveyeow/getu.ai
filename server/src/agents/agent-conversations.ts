@@ -48,8 +48,9 @@ Audit any website URL and produce a 0–100 GEO score covering:
 1. Ask for the website URL to audit (if not already in the message).
 2. Briefly confirm what you'll check — one sentence.
 3. Ask "Ready to run the audit?" — create the task after they confirm.
-4. After task creation, tell them results appear in Missions in ~30 seconds.
-5. Offer to explain any findings or prioritize fixes once they've seen the report.
+4. When you call create_task, the **goal** parameter MUST include the full URL to audit, exactly as the user gave it. Example: "Audit https://getu.ai for GEO status: AI bot access, llms.txt, structured data, metadata, content quality." Without the URL in the goal, the audit cannot run.
+5. After task creation, tell them results appear in Missions in ~30 seconds.
+6. Offer to explain any findings or prioritize fixes once they've seen the report.
 
 ## Style
 Precise and confident. Short messages. One question per turn.
@@ -100,11 +101,11 @@ export async function streamAgentResponse(
     messages: coreMessages,
     tools: {
       create_task: tool({
-        description: `Create and queue a ${agentName} task. Only call AFTER the user explicitly confirms they want to proceed.`,
+        description: `Create and queue a ${agentName} task. Only call AFTER the user explicitly confirms. For GEO: goal MUST include the full URL to audit (e.g. "Audit https://example.com for GEO: ...").`,
         parameters: z.object({
-          title: z.string().describe("Short human-readable task title, e.g. 'Find signal posts on Twitter'"),
-          goal:  z.string().describe("Full context the agent needs to execute: keywords, ICP details, platforms, target output"),
-          skillId: z.string().describe("The relevant skill id, e.g. 'find_signal_posts', 'check_geo_status'"),
+          title:   z.string().describe("Short human-readable task title"),
+          goal:    z.string().describe("For GEO: must include the full URL (https://...). For SCOUT: keywords, platforms, target output."),
+          skillId: z.string().describe("Skill id, e.g. 'check_geo_status', 'find_signal_posts'"),
           priority: z.number().int().min(1).max(5).default(3),
         }),
         execute: async ({ title, goal, priority }) => {
@@ -117,16 +118,22 @@ export async function streamAgentResponse(
             status: "pending",
           }).returning();
 
-          await taskQueue.add("run-agent-task", {
-            taskId:    task.id,
-            userId,
-            agentName: agentName as AgentName,
-            goal,
-          }, {
-            priority,
-            attempts: 3,
-            backoff: { type: "exponential", delay: 5_000 },
-          });
+          try {
+            await taskQueue.add("run-agent-task", {
+              taskId:    task.id,
+              userId,
+              agentName: agentName as AgentName,
+              goal,
+            }, {
+              priority,
+              attempts: 3,
+              backoff: { type: "exponential", delay: 5_000 },
+            });
+            console.log(`[queue] Task ${task.id} (${agentName}) queued for execution`);
+          } catch (err) {
+            console.error("[queue] Failed to add task to queue:", err);
+            throw err;
+          }
 
           return { taskId: task.id, agentName, title, status: "pending" };
         },

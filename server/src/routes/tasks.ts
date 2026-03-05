@@ -95,6 +95,26 @@ tasksRoute.post("/:id/resume", async (c) => {
   return c.json<ApiResponse<{ id: string }>>({ data: { id }, error: null });
 });
 
+// PATCH /api/v1/tasks/:id — update priority (1–5). If task is pending/paused, re-enqueue with new priority.
+tasksRoute.patch("/:id", async (c) => {
+  const userId = c.get("userId") as string;
+  const id     = c.req.param("id");
+  const body   = await c.req.json<{ priority?: number }>();
+  const priority = body.priority;
+
+  if (priority === undefined || !Number.isInteger(priority) || priority < 1 || priority > 5) {
+    return c.json<ApiResponse<null>>({ data: null, error: "priority must be 1–5" }, 400);
+  }
+
+  const task = await db.query.tasks.findFirst({
+    where: and(eq(tasks.id, id), eq(tasks.userId, userId)),
+  });
+  if (!task) return c.json<ApiResponse<null>>({ data: null, error: "task not found" }, 404);
+
+  await db.update(tasks).set({ priority }).where(eq(tasks.id, id));
+  return c.json<ApiResponse<{ id: string; priority: number }>>({ data: { id, priority }, error: null });
+});
+
 // DELETE /api/v1/tasks/:id
 tasksRoute.delete("/:id", async (c) => {
   const userId = c.get("userId") as string;

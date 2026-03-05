@@ -1,7 +1,15 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { T } from "../../lib/theme.js";
 import { useAriaChat } from "../../hooks/useAriaChat.js";
+import { useAgentChat } from "../../hooks/useAgentChat.js";
 import type { SidebarTab } from "../layout/Sidebar.js";
+
+export interface AgentChatInfo {
+  name:   string;
+  color:  string;
+  tagline: string;
+  starter: string;
+}
 
 const SUGGESTIONS = [
   "I'm building a B2B SaaS, help me find my first users",
@@ -20,14 +28,26 @@ function greeting() {
 interface Props {
   onNavigate:               (tab: SidebarTab) => void;
   conversationId?:          string;
-  onNewConversation?:       (id: string) => void;
-  initialPrompt?:           string;
+  onNewConversation?:      (id: string) => void;
+  initialPrompt?:          string;
   onInitialPromptConsumed?: () => void;
-  userName?:                string;
+  userName?:               string;
+  agentName?:              string;
+  agentInfo?:              AgentChatInfo;
 }
 
-export default function AriaChat({ onNavigate, conversationId: initConvId, onNewConversation, initialPrompt, onInitialPromptConsumed, userName }: Props) {
-  const { messages, streaming, loading, error, sendMessage, conversationId } = useAriaChat(initConvId);
+export default function AriaChat({ onNavigate, conversationId: initConvId, onNewConversation, initialPrompt, onInitialPromptConsumed, userName, agentName, agentInfo }: Props) {
+  const aria  = useAriaChat(initConvId);
+  const agent = useAgentChat(agentName ?? "ARIA", initConvId); // placeholder when not in agent mode (result unused)
+
+  const isAgentMode = !!agentName;
+  const messages    = isAgentMode ? agent.messages    : aria.messages;
+  const streaming   = isAgentMode ? agent.streaming   : aria.streaming;
+  const loading     = isAgentMode ? false             : aria.loading;
+  const error       = isAgentMode ? agent.error       : aria.error;
+  const sendMessage = isAgentMode ? agent.sendMessage  : aria.sendMessage;
+  const conversationId = isAgentMode ? agent.conversationId : aria.conversationId;
+
   const [input, setInput] = useState(initialPrompt ?? "");
   const endRef            = useRef<HTMLDivElement>(null);
   const textareaRef       = useRef<HTMLTextAreaElement>(null);
@@ -95,19 +115,34 @@ export default function AriaChat({ onNavigate, conversationId: initConvId, onNew
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", animation: "fadeUp .35s ease" }}>
           <div style={{ width: "100%", maxWidth: 640, margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, justifyContent: "center" }}>
-              <PixelBot />
+              {isAgentMode && agentInfo
+                ? (
+                    <div style={{ width: 40, height: 40, borderRadius: 40 * 0.28, background: `${agentInfo.color}18`, border: `1.5px solid ${agentInfo.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 600, color: agentInfo.color }}>{agentInfo.name[0]}</span>
+                    </div>
+                  )
+                : <PixelBot />}
               <h2 style={{ fontSize: 32, fontWeight: 300, fontFamily: T.serif, color: "#333", letterSpacing: "-0.01em", lineHeight: 1.3, margin: 0 }}>
-                {greeting()}, {firstName}
+                {isAgentMode && agentInfo ? `Chat with ${agentInfo.name}` : `${greeting()}, ${firstName}`}
               </h2>
             </div>
-            <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large />
+            <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder={isAgentMode && agentInfo ? `Message ${agentInfo.name}…` : "Message ARIA..."} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
-              {SUGGESTIONS.map(s => (
-                <button key={s} onClick={() => submit(s)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: T.textMid, textAlign: "left", lineHeight: 1.5, cursor: "pointer" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = T.borderMid; e.currentTarget.style.color = T.text; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMid; }}
-                >{s}</button>
-              ))}
+              {isAgentMode && agentInfo?.starter
+                ? (
+                    <button onClick={() => { setInput(agentInfo.starter); textareaRef.current?.focus(); }} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: T.textMid, textAlign: "left", lineHeight: 1.5, cursor: "pointer", gridColumn: "1 / -1" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.borderMid; e.currentTarget.style.color = T.text; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMid; }}
+                    >
+                      {agentInfo.starter}…
+                    </button>
+                  )
+                : SUGGESTIONS.map(s => (
+                    <button key={s} onClick={() => submit(s)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: T.textMid, textAlign: "left", lineHeight: 1.5, cursor: "pointer" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.borderMid; e.currentTarget.style.color = T.text; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMid; }}
+                    >{s}</button>
+                  ))}
             </div>
           </div>
         </div>
@@ -125,9 +160,10 @@ export default function AriaChat({ onNavigate, conversationId: initConvId, onNew
               message={msg}
               isStreaming={streaming && i === messages.length - 1 && msg.role === "assistant"}
               onViewMissions={() => onNavigate("missions")}
+              agentInfo={agentInfo}
             />
           ))}
-          {showThinking && <ThinkingDots />}
+          {showThinking && <ThinkingDots agentInfo={agentInfo} />}
           {error && (
             <div style={{ fontSize: 12, color: "#dc2626", fontFamily: T.mono, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>
               {error}
@@ -138,7 +174,7 @@ export default function AriaChat({ onNavigate, conversationId: initConvId, onNew
       </div>
       <div style={{ padding: "12px 24px 20px", borderTop: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
-          <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} />
+          <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} placeholder={isAgentMode && agentInfo ? `Message ${agentInfo.name}…` : undefined} />
         </div>
       </div>
     </div>
@@ -249,23 +285,24 @@ function renderMarkdown(text: string): React.ReactNode {
 // ── Input Box ─────────────────────────────────────────────────────────────────
 
 interface InputBoxProps {
-  value:     string;
-  onChange:  (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
-  onSubmit:  () => void;
-  streaming: boolean;
-  large?:    boolean;
+  value:       string;
+  onChange:    (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown:   (e: React.KeyboardEvent) => void;
+  onSubmit:    () => void;
+  streaming:   boolean;
+  large?:      boolean;
+  placeholder?: string;
 }
 
 const InputBox = forwardRef<HTMLTextAreaElement, InputBoxProps>(
-  ({ value, onChange, onKeyDown, onSubmit, streaming, large }, ref) => (
+  ({ value, onChange, onKeyDown, onSubmit, streaming, large, placeholder = "Message ARIA..." }, ref) => (
     <div style={{ display: "flex", alignItems: "flex-end", gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: large ? 16 : 12, padding: large ? "14px 16px" : "10px 12px", boxShadow: large ? "0 4px 24px rgba(0,0,0,0.07)" : "0 2px 8px rgba(0,0,0,0.04)" }}>
       <textarea
         ref={ref}
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        placeholder="Message ARIA..."
+        placeholder={placeholder}
         rows={large ? 3 : 1}
         style={{ flex: 1, border: "none", background: "transparent", fontSize: large ? 15 : 14, color: T.text, fontFamily: T.sans, resize: "none", lineHeight: 1.65, outline: "none", minHeight: large ? 72 : undefined }}
       />
@@ -286,15 +323,24 @@ interface MessageBubbleProps {
   message:        { id: string; role: "user" | "assistant"; content: string; taskCreated?: { taskId: string; agentName: string; title: string } };
   isStreaming:    boolean;
   onViewMissions: () => void;
+  agentInfo?:     AgentChatInfo | null;
 }
 
-function MessageBubble({ message, isStreaming, onViewMissions }: MessageBubbleProps) {
+function MessageBubble({ message, isStreaming, onViewMissions, agentInfo }: MessageBubbleProps) {
   const isUser = message.role === "user";
+  const nameLabel = agentInfo ? agentInfo.name : "ARIA";
+  const avatarEl = !isUser && (agentInfo
+    ? (
+        <div style={{ width: 28, height: 28, borderRadius: 28 * 0.28, background: `${agentInfo.color}18`, border: `1.5px solid ${agentInfo.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 600, color: agentInfo.color }}>{agentInfo.name[0]}</span>
+        </div>
+      )
+    : <AriaAvatar size={28} />);
   return (
     <div style={{ display: "flex", gap: 10, animation: "slideIn .2s ease", flexDirection: isUser ? "row-reverse" : "row" }}>
-      {!isUser && <AriaAvatar size={28} />}
+      {!isUser && avatarEl}
       <div style={{ maxWidth: "80%", display: "flex", flexDirection: "column", gap: 6, alignItems: isUser ? "flex-end" : "flex-start" }}>
-        {!isUser && <span style={{ fontSize: 10, color: T.green, fontFamily: T.mono, letterSpacing: .5 }}>ARIA</span>}
+        {!isUser && <span style={{ fontSize: 10, color: agentInfo ? agentInfo.color : T.green, fontFamily: T.mono, letterSpacing: .5 }}>{nameLabel}</span>}
         <div style={{ background: isUser ? T.text : T.surface, color: isUser ? "#fff" : T.text, border: isUser ? "none" : `1px solid ${T.border}`, borderRadius: isUser ? "12px 12px 4px 12px" : "4px 12px 12px 12px", padding: "10px 14px", fontSize: 14 }}>
           {isUser
             ? <span style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{message.content}</span>
@@ -321,10 +367,17 @@ function MessageBubble({ message, isStreaming, onViewMissions }: MessageBubblePr
   );
 }
 
-function ThinkingDots() {
+function ThinkingDots({ agentInfo }: { agentInfo?: AgentChatInfo | null }) {
+  const avatarEl = agentInfo
+    ? (
+        <div style={{ width: 28, height: 28, borderRadius: 28 * 0.28, background: `${agentInfo.color}18`, border: `1.5px solid ${agentInfo.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 600, color: agentInfo.color }}>{agentInfo.name[0]}</span>
+        </div>
+      )
+    : <AriaAvatar size={28} />;
   return (
     <div style={{ display: "flex", gap: 10 }}>
-      <AriaAvatar size={28} />
+      {avatarEl}
       <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "10px 14px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "4px 12px 12px 12px" }}>
         {[0, 1, 2].map(i => (
           <span key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: T.textDim, display: "inline-block", animation: `pulse 1.2s ${i * .2}s infinite` }} />
