@@ -182,17 +182,44 @@ export default function SkillsPage({ onChat }: { onChat: (prompt?: string) => vo
   const phase1 = SKILLS.filter(s => s.phase === 1);
   const phase2 = SKILLS.filter(s => s.phase === 2);
   const [expanded, setExpanded] = useState<string | null>(phase1[0]?.id ?? null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [customSkills, setCustomSkills] = useState<Skill[]>([]);
+
+  function handleSaveCustom(skill: Skill) {
+    setCustomSkills(prev => [...prev, skill]);
+    setShowCreate(false);
+    setExpanded(skill.id);
+  }
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "28px 32px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
 
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, color: T.text, marginBottom: 6 }}>Skills</h1>
-          <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
-            Each skill is a capability your agents can execute. Tell ARIA what you need — it picks the right agent and skill automatically.
-          </p>
+        <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 600, color: T.text, marginBottom: 6 }}>Skills</h1>
+            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
+              Each skill is a capability your agents can execute. Tell ARIA what you need — it picks the right agent and skill automatically.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreate(true)}
+            style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, background: T.text, color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer", marginTop: 2 }}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Create skill
+          </button>
         </div>
+
+        {customSkills.length > 0 && (
+          <>
+            <SectionLabel label="Custom skills" dot="#8B5CF6" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+              {customSkills.map(skill => (
+                <SkillCard key={skill.id} skill={skill} expanded={expanded === skill.id} onToggle={() => setExpanded(expanded === skill.id ? null : skill.id)} onChat={() => onChat(skill.example)} custom />
+              ))}
+            </div>
+          </>
+        )}
 
         <SectionLabel label="Available now" dot={T.green} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
@@ -208,6 +235,8 @@ export default function SkillsPage({ onChat }: { onChat: (prompt?: string) => vo
           ))}
         </div>
       </div>
+
+      {showCreate && <CreateSkillModal onClose={() => setShowCreate(false)} onSave={handleSaveCustom} />}
     </div>
   );
 }
@@ -221,20 +250,22 @@ function SectionLabel({ label, dot }: { label: string; dot: string }) {
   );
 }
 
-function SkillCard({ skill, expanded, onToggle, onChat, soon }: { skill: Skill; expanded: boolean; onToggle: () => void; onChat: () => void; soon?: boolean }) {
-  const color = AGENT_COLOR[skill.agent] ?? T.textMid;
+function SkillCard({ skill, expanded, onToggle, onChat, soon, custom }: { skill: Skill; expanded: boolean; onToggle: () => void; onChat: () => void; soon?: boolean; custom?: boolean }) {
+  const color = custom ? "#8B5CF6" : (AGENT_COLOR[skill.agent] ?? T.textMid);
 
   return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+    <div style={{ background: T.surface, border: `1px solid ${custom ? "#8B5CF620" : T.border}`, borderRadius: 10, overflow: "hidden" }}>
       <div onClick={soon ? undefined : onToggle} style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", cursor: soon ? "default" : "pointer" }}>
         <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 9, background: `${color}12`, border: `1px solid ${color}25`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 600, color }}>{skill.agent.split(" ").map(w => w[0]).join("").slice(0, 2)}</span>
+          <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 600, color }}>{custom ? "CS" : skill.agent.split(" ").map(w => w[0]).join("").slice(0, 2)}</span>
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{skill.name}</span>
-            <span style={{ fontSize: 10, fontFamily: T.mono, color, background: `${color}10`, borderRadius: 100, padding: "1px 7px" }}>{skill.agent}</span>
+            {custom
+              ? <span style={{ fontSize: 10, fontFamily: T.mono, color: "#8B5CF6", background: "#8B5CF610", borderRadius: 100, padding: "1px 7px" }}>custom</span>
+              : <span style={{ fontSize: 10, fontFamily: T.mono, color, background: `${color}10`, borderRadius: 100, padding: "1px 7px" }}>{skill.agent}</span>}
           </div>
           <p style={{ fontSize: 12, color: T.textMid, lineHeight: 1.55, margin: 0 }}>{skill.description}</p>
         </div>
@@ -285,5 +316,106 @@ function ChevronIcon({ rotated }: { rotated: boolean }) {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, transform: rotated ? "rotate(180deg)" : "none", transition: "transform .15s" }}>
       <path d="M3 5l4 4 4-4" stroke={T.textDim} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// ── Create Skill Modal ───────────────────────────────────────────────────────
+
+const AGENT_OPTIONS = ["ARIA", "Twitter Manager", "Reddit Scout", "Lead Finder", "Community Finder", "Content Studio"];
+
+function CreateSkillModal({ onClose, onSave }: { onClose: () => void; onSave: (skill: Skill) => void }) {
+  const [name, setName] = useState("");
+  const [agent, setAgent] = useState(AGENT_OPTIONS[0]);
+  const [description, setDescription] = useState("");
+  const [inputs, setInputs] = useState("");
+  const [outputs, setOutputs] = useState("");
+  const [example, setExample] = useState("");
+
+  function handleSave() {
+    if (!name.trim() || !description.trim()) return;
+    onSave({
+      id: `custom_${Date.now()}`,
+      name: name.trim(),
+      agent,
+      phase: 1,
+      description: description.trim(),
+      inputs: inputs.split("\n").map(s => s.trim()).filter(Boolean),
+      outputs: outputs.split("\n").map(s => s.trim()).filter(Boolean),
+      example: example.trim() || `Run "${name.trim()}"`,
+    });
+  }
+
+  const fieldStyle: React.CSSProperties = {
+    width: "100%", border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px",
+    fontSize: 13, fontFamily: T.sans, color: T.text, background: T.bg, outline: "none",
+    boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontFamily: T.mono, color: T.textDim, letterSpacing: 0.4, marginBottom: 5, display: "block",
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: T.surface, borderRadius: 14, width: 480, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 48px rgba(0,0,0,0.15)", padding: "24px 28px" }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: T.text, margin: 0 }}>Create custom skill</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, color: T.textDim, cursor: "pointer", padding: 4, lineHeight: 1 }}>&times;</button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label style={labelStyle}>SKILL NAME</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Monitor competitor launches" style={fieldStyle} />
+          </div>
+
+          <div>
+            <label style={labelStyle}>ASSIGN TO AGENT</label>
+            <select value={agent} onChange={e => setAgent(e.target.value)} style={{ ...fieldStyle, cursor: "pointer" }}>
+              {AGENT_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>DESCRIPTION</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What does this skill do?" rows={3} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.55 }} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={labelStyle}>INPUTS (one per line)</label>
+              <textarea value={inputs} onChange={e => setInputs(e.target.value)} placeholder={"Competitor URLs\nTracking frequency"} rows={3} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.55 }} />
+            </div>
+            <div>
+              <label style={labelStyle}>OUTPUTS (one per line)</label>
+              <textarea value={outputs} onChange={e => setOutputs(e.target.value)} placeholder={"Change summary\nAlert notification"} rows={3} style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.55 }} />
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>EXAMPLE PROMPT</label>
+            <input value={example} onChange={e => setExample(e.target.value)} placeholder='e.g. "Track acme.com and alert me when they ship new features"' style={fieldStyle} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 22 }}>
+          <button onClick={onClose} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 7, padding: "8px 16px", fontSize: 12, color: T.textMid, cursor: "pointer" }}>
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!name.trim() || !description.trim()}
+            style={{ background: !name.trim() || !description.trim() ? T.textDim : T.text, color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 500, cursor: !name.trim() || !description.trim() ? "default" : "pointer", opacity: !name.trim() || !description.trim() ? 0.5 : 1 }}
+          >
+            Create skill
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -146,19 +146,50 @@ interface Props {
   userName?: string;
 }
 
+const LS_KEY = "cs_demo_state";
+
+interface PersistedState {
+  messages: ChatMessage[];
+  phase: Phase;
+  contentPieces: ContentPiece[];
+  turn: number;
+}
+
+function loadState(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch { return null; }
+}
+
+function saveState(s: PersistedState) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch { /* quota */ }
+}
+
+function clearState() {
+  try { localStorage.removeItem(LS_KEY); } catch { /* noop */ }
+}
+
 export default function ContentStudioView({ onNavigate, userName }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const saved = useRef(loadState());
+
+  const [messages, setMessages] = useState<ChatMessage[]>(saved.current?.messages ?? []);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
-  const [phase, setPhase] = useState<Phase>(1);
+  const [phase, setPhase] = useState<Phase>(saved.current?.phase ?? 1);
   const [wsTab, setWsTab] = useState<WorkspaceTab>("content");
-  const [contentPieces, setContentPieces] = useState<ContentPiece[]>([]);
+  const [contentPieces, setContentPieces] = useState<ContentPiece[]>(saved.current?.contentPieces ?? []);
   const [editingPiece, setEditingPiece] = useState<ContentPiece | null>(null);
 
   const endRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const turnRef = useRef(0);
+  const turnRef = useRef(saved.current?.turn ?? 0);
+
+  useEffect(() => {
+    saveState({ messages, phase, contentPieces, turn: turnRef.current });
+  }, [messages, phase, contentPieces]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingText]);
 
@@ -225,6 +256,7 @@ export default function ContentStudioView({ onNavigate, userName }: Props) {
   const allApproved = contentPieces.length > 0 && pendingCount === 0;
 
   function resetSession() {
+    clearState();
     setMessages([]);
     setInput("");
     setStreaming(false);
@@ -341,7 +373,6 @@ const PHASES = [
 function PhaseStepper({ phase, onNew }: { phase: Phase; onNew: () => void }) {
   return (
     <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 16px 0 0", height: 44, gap: 0 }}>
-      {/* Phase steps — flush left, flex across full width */}
       <div style={{ display: "flex", alignItems: "center", flex: 1, padding: "0 20px", gap: 0 }}>
         {PHASES.map((p, i) => {
           const n = i + 1;
@@ -366,8 +397,6 @@ function PhaseStepper({ phase, onNew }: { phase: Phase; onNew: () => void }) {
           );
         })}
       </div>
-
-      {/* Right side: status + new button */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontFamily: T.mono, fontWeight: 500, color: T.green, background: `${T.green}14`, borderRadius: 100, padding: "3px 9px", border: `1px solid ${T.greenMid}` }}>
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.green, display: "inline-block", animation: "pulse 2s infinite" }} />
@@ -565,11 +594,9 @@ function ContentCard({ piece, onApprove, onEdit }: { piece: ContentPiece; onAppr
   const [hov, setHov] = useState(false);
   const isApproved = piece.status === "approved";
   const isVertical = piece.format === "Vertical";
-  const isSquare = piece.format === "Carousel" || piece.format === "Square";
 
-  // TikTok vertical = 9:16, IG carousel/square = 1:1, IG portrait = 4:5
-  const mediaWidth = isVertical ? 150 : isSquare ? 180 : 180;
-  const mediaHeight = isVertical ? 267 : isSquare ? 180 : 225;
+  const mediaWidth = 160;
+  const mediaHeight = 200;
 
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{

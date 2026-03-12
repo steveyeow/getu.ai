@@ -554,15 +554,12 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
             <div style={{ textAlign: "center", marginBottom: 28 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", marginBottom: 12 }}>
                 <PixelBot />
-                <h2 style={{ fontSize: 28, fontWeight: 300, fontFamily: T.serif, color: "#333", letterSpacing: "-0.01em", lineHeight: 1.3, margin: 0 }}>
+                <h2 style={{ fontSize: 32, fontWeight: 300, fontFamily: T.serifDisplay, color: "#3D3929", letterSpacing: "-0.015em", lineHeight: 1.25, margin: 0 }}>
                   {greeting()}, {firstName}
                 </h2>
               </div>
-              <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6, margin: 0 }}>
-                Tell me your product — I'll craft a GTM strategy and deploy the right agents.
-              </p>
             </div>
-            <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder="Paste your URL or describe your product…" />
+            <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder="Tell me your product — I'll craft a GTM strategy and deploy the right agents." />
             <div style={{ marginTop: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim, letterSpacing: 0.5, textTransform: "uppercase" }}>or pick an agent to start</span>
@@ -1010,36 +1007,72 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
   const color = agentColor ?? T.green;
   const [page, setPage] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [customTexts, setCustomTexts] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const q = questions[page];
   const total = questions.length;
   const selected = answers[q.id] ?? [];
+  const customText = customTexts[q.id] ?? "";
+  const CUSTOM_ID = "__custom__";
+  const isCustomSelected = selected.includes(CUSTOM_ID);
+  const hasAnswer = selected.length > 0 && (!isCustomSelected || customText.trim().length > 0);
 
   function toggleOption(optId: string) {
     if (submitted) return;
+    if (optId === CUSTOM_ID) {
+      setAnswers(prev => {
+        const cur = prev[q.id] ?? [];
+        if (cur.includes(CUSTOM_ID)) return { ...prev, [q.id]: cur.filter(x => x !== CUSTOM_ID) };
+        if (q.allowMultiple) return { ...prev, [q.id]: [...cur, CUSTOM_ID] };
+        return { ...prev, [q.id]: [CUSTOM_ID] };
+      });
+      return;
+    }
     setAnswers(prev => {
       const cur = prev[q.id] ?? [];
       if (q.allowMultiple) {
-        return { ...prev, [q.id]: cur.includes(optId) ? cur.filter(x => x !== optId) : [...cur, optId] };
+        return { ...prev, [q.id]: cur.includes(optId) ? cur.filter(x => x !== optId) : [...cur.filter(x => x !== CUSTOM_ID), optId] };
       }
       return { ...prev, [q.id]: [optId] };
     });
+    setCustomTexts(prev => ({ ...prev, [q.id]: "" }));
+  }
+
+  function handleCustomFocus() {
+    if (submitted) return;
+    if (!isCustomSelected) {
+      setAnswers(prev => {
+        if (q.allowMultiple) {
+          const cur = prev[q.id] ?? [];
+          return { ...prev, [q.id]: [...cur.filter(x => x !== CUSTOM_ID), CUSTOM_ID] };
+        }
+        return { ...prev, [q.id]: [CUSTOM_ID] };
+      });
+    }
   }
 
   function handleContinue() {
-    if (selected.length === 0) return;
+    if (!hasAnswer) return;
     if (page < total - 1) {
       setPage(p => p + 1);
     } else {
       setSubmitted(true);
-      onSubmitAnswers(answers);
+      const finalAnswers: Record<string, string[]> = {};
+      for (const qq of questions) {
+        const sel = answers[qq.id] ?? [];
+        finalAnswers[qq.id] = sel.map(s => s === CUSTOM_ID ? (customTexts[qq.id] ?? "").trim() : s).filter(Boolean);
+      }
+      onSubmitAnswers(finalAnswers);
     }
   }
 
   if (submitted) {
     const summary = questions.map(qq => {
       const sel = answers[qq.id] ?? [];
-      const labels = sel.map(s => qq.options.find(o => o.id === s)?.label ?? s).join(", ");
+      const labels = sel.map(s => {
+        if (s === CUSTOM_ID) return (customTexts[qq.id] ?? "").trim();
+        return qq.options.find(o => o.id === s)?.label ?? s;
+      }).filter(Boolean).join(", ");
       return `${qq.prompt} → ${labels}`;
     });
     return (
@@ -1054,6 +1087,8 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
       </div>
     );
   }
+
+  const optionCount = q.options.length;
 
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "14px 16px", width: "100%", display: "flex", flexDirection: "column", gap: 0 }}>
@@ -1072,8 +1107,8 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M7 3L4 6l3 3" /></svg>
           </button>
           <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{page + 1} of {total}</span>
-          <button onClick={() => page < total - 1 && selected.length > 0 && setPage(p => p + 1)} disabled={page >= total - 1 || selected.length === 0}
-            style={{ background: "none", border: "none", cursor: (page < total - 1 && selected.length > 0) ? "pointer" : "default", padding: 2, color: (page < total - 1 && selected.length > 0) ? T.textMid : T.border, display: "flex" }}>
+          <button onClick={() => page < total - 1 && hasAnswer && setPage(p => p + 1)} disabled={page >= total - 1 || !hasAnswer}
+            style={{ background: "none", border: "none", cursor: (page < total - 1 && hasAnswer) ? "pointer" : "default", padding: 2, color: (page < total - 1 && hasAnswer) ? T.textMid : T.border, display: "flex" }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 3l3 3-3 3" /></svg>
           </button>
         </div>
@@ -1084,7 +1119,7 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {q.options.map(opt => {
+        {q.options.map((opt, idx) => {
           const isSelected = selected.includes(opt.id);
           return (
             <button key={opt.id} onClick={() => toggleOption(opt.id)}
@@ -1107,23 +1142,69 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
               }}>
                 {isSelected && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>}
               </span>
-              <span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: isSelected ? color : T.textDim, width: 14 }}>{String.fromCharCode(65 + q.options.indexOf(opt))}</span>
+              <span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: isSelected ? color : T.textDim, width: 14 }}>{String.fromCharCode(65 + idx)}</span>
               <span style={{ flex: 1 }}>{opt.label}</span>
             </button>
           );
         })}
+
+        {/* Custom input option — always shown as the last option */}
+        <div
+          onClick={handleCustomFocus}
+          style={{
+            display: "flex", alignItems: "flex-start", gap: 10,
+            padding: "9px 12px", borderRadius: 8,
+            background: isCustomSelected ? `${color}0A` : "transparent",
+            border: `1.5px solid ${isCustomSelected ? color : T.border}`,
+            cursor: "pointer", transition: "all .12s",
+          }}
+          onMouseEnter={e => { if (!isCustomSelected) e.currentTarget.style.borderColor = T.borderMid; }}
+          onMouseLeave={e => { if (!isCustomSelected) e.currentTarget.style.borderColor = T.border; }}
+        >
+          <span style={{
+            width: 20, height: 20, borderRadius: q.allowMultiple ? 4 : 10,
+            border: `1.5px solid ${isCustomSelected ? color : T.border}`,
+            background: isCustomSelected ? color : "transparent",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            transition: "all .12s", marginTop: 1,
+          }}>
+            {isCustomSelected && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>}
+          </span>
+          <span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: isCustomSelected ? color : T.textDim, width: 14, marginTop: 2 }}>{String.fromCharCode(65 + optionCount)}</span>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 12, color: isCustomSelected ? T.text : T.textMid }}>Type my own answer</span>
+            <input
+              type="text"
+              value={customText}
+              onFocus={handleCustomFocus}
+              onClick={e => e.stopPropagation()}
+              onChange={e => {
+                setCustomTexts(prev => ({ ...prev, [q.id]: e.target.value }));
+                if (!isCustomSelected) handleCustomFocus();
+              }}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleContinue(); } }}
+              placeholder="Type here…"
+              style={{
+                width: "100%", border: `1px solid ${isCustomSelected ? color + "40" : T.border}`,
+                borderRadius: 6, padding: "6px 8px", fontSize: 12, color: T.text,
+                background: isCustomSelected ? "#fff" : T.bg, outline: "none",
+                fontFamily: T.sans, transition: "border-color .12s",
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginTop: 14, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
         <span style={{ fontSize: 11, color: T.textDim, fontFamily: T.mono }}>Skip <span style={{ fontSize: 10, color: T.border }}>Esc</span></span>
-        <button onClick={handleContinue} disabled={selected.length === 0}
+        <button onClick={handleContinue} disabled={!hasAnswer}
           style={{
             display: "flex", alignItems: "center", gap: 5,
             padding: "7px 18px", borderRadius: 7,
-            background: selected.length > 0 ? color : T.border,
+            background: hasAnswer ? color : T.border,
             color: "#fff", border: "none", fontSize: 12, fontWeight: 600,
-            cursor: selected.length > 0 ? "pointer" : "default",
-            transition: "background .15s", opacity: selected.length > 0 ? 1 : 0.5,
+            cursor: hasAnswer ? "pointer" : "default",
+            transition: "background .15s", opacity: hasAnswer ? 1 : 0.5,
           }}
         >
           Continue

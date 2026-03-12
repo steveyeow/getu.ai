@@ -7,7 +7,8 @@ import SandboxLoader from "./components/landing/SandboxLoader.js";
 
 const DEV_USER = {
   id: "00000000-0000-0000-0000-000000000000",
-  email: "dev@getu.ai",
+  email: "steve@getu.ai",
+  user_metadata: { full_name: "Steve" },
 } as User;
 
 export default function App() {

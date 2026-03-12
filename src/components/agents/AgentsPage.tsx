@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { T } from "../../lib/theme.js";
 
 interface TeamAgent {
@@ -156,26 +156,74 @@ export const AGENTS = [
 
 export type AgentInfo = (typeof AGENTS)[number];
 
+interface CustomAgent {
+  name: string;
+  tagline: string;
+  color: string;
+  platforms: string[];
+  caps: string[];
+  starter: string;
+  instructions: string;
+}
+
 interface Props {
   onNavigate: (tab: "missions") => void;
   onChatWithAgent: (agent: AgentInfo) => void;
 }
 
 export default function AgentsPage({ onNavigate, onChatWithAgent }: Props) {
+  const [showCreate, setShowCreate] = useState(false);
+  const [customAgents, setCustomAgents] = useState<CustomAgent[]>([]);
+
+  function handleSaveCustom(agent: CustomAgent) {
+    setCustomAgents(prev => [...prev, agent]);
+    setShowCreate(false);
+  }
+
   return (
     <div style={{ height: "100%", overflowY: "auto", padding: "24px 20px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: T.text, fontFamily: T.mono }}>Agents</h2>
-        <p style={{ fontSize: 12, color: T.textDim, marginTop: 4 }}>Your AI GTM team — working around the clock across every channel.</p>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: T.text, fontFamily: T.mono }}>Agents</h2>
+          <p style={{ fontSize: 12, color: T.textDim, marginTop: 4 }}>Your AI GTM team — working around the clock across every channel.</p>
+        </div>
+        <button
+          onClick={() => setShowCreate(true)}
+          style={{
+            flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+            background: T.text, color: "#fff", border: "none", borderRadius: 8,
+            padding: "9px 16px", fontSize: 12, fontWeight: 500, fontFamily: T.mono,
+            cursor: "pointer", transition: "opacity .15s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+          onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Create Agent
+        </button>
       </div>
+
+      {customAgents.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <SectionHeader label="Custom Agents" count={customAgents.length} color="#8B5CF6" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+            {customAgents.map(agent => (
+              <CustomAgentCard
+                key={agent.name}
+                agent={agent}
+                onChat={() => onChatWithAgent({ name: agent.name, color: agent.color, tagline: agent.tagline, starter: agent.starter } as AgentInfo)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: 32 }}>
         <SectionHeader label="Your Team" count={MY_TEAM.length} color={T.green} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-          {MY_TEAM.slice(0, 3).map((agent, i) => <TeamCard key={i} agent={agent} />)}
+          {MY_TEAM.slice(0, 3).map((agent, i) => <TeamCard key={i} agent={agent} onNewMission={onChatWithAgent} />)}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginTop: 14 }}>
-          {MY_TEAM.slice(3).map((agent, i) => <TeamCard key={i + 3} agent={agent} />)}
+          {MY_TEAM.slice(3).map((agent, i) => <TeamCard key={i + 3} agent={agent} onNewMission={onChatWithAgent} />)}
         </div>
       </div>
 
@@ -193,6 +241,8 @@ export default function AgentsPage({ onNavigate, onChatWithAgent }: Props) {
           );
         })()}
       </div>
+
+      {showCreate && <CreateAgentModal onClose={() => setShowCreate(false)} onSave={handleSaveCustom} />}
     </div>
   );
 }
@@ -207,9 +257,16 @@ function SectionHeader({ label, count, color }: { label: string; count: number; 
   );
 }
 
-function TeamCard({ agent }: { agent: TeamAgent }) {
+function TeamCard({ agent, onNewMission }: { agent: TeamAgent; onNewMission: (a: AgentInfo) => void }) {
   const [hov, setHov] = useState(false);
+  const [btnHov, setBtnHov] = useState(false);
   const initials = agent.name.split(" ").map(w => w[0]).join("").slice(0, 2);
+
+  function handleNewMission() {
+    const match = AGENTS.find(a => a.name === agent.name);
+    if (match) onNewMission(match);
+  }
+
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
       background: T.surface, border: `1px solid ${hov ? agent.color + "40" : T.border}`,
@@ -249,6 +306,25 @@ function TeamCard({ agent }: { agent: TeamAgent }) {
           </div>
         ))}
       </div>
+
+      <button
+        onClick={handleNewMission}
+        onMouseEnter={() => setBtnHov(true)}
+        onMouseLeave={() => setBtnHov(false)}
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "9px 16px", background: btnHov ? agent.color : `${agent.color}12`,
+          color: btnHov ? "#fff" : agent.color,
+          border: "none", borderRadius: 8, fontSize: 12, fontWeight: 500, fontFamily: T.mono,
+          cursor: "pointer", transition: "background .15s, color .15s",
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <line x1="6" y1="2" x2="6" y2="10" />
+          <line x1="2" y1="6" x2="10" y2="6" />
+        </svg>
+        New Mission
+      </button>
     </div>
   );
 }
@@ -306,4 +382,313 @@ function PlatformIcon({ type, color }: { type: TeamAgent["platformIcon"]; color:
   if (type === "communities") return <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>;
   if (type === "all") return <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10A15.3 15.3 0 0112 2z" /></svg>;
   return <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>;
+}
+
+
+// ── Custom Agent Card ────────────────────────────────────────────────────────
+
+function CustomAgentCard({ agent, onChat }: { agent: CustomAgent; onChat: () => void }) {
+  const [hov, setHov] = useState(false);
+  const initials = agent.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
+      background: T.surface, border: `1px solid ${hov ? agent.color + "40" : T.border}`,
+      borderRadius: 12, padding: 18, display: "flex", flexDirection: "column", gap: 12,
+      transition: "border-color .15s ease", position: "relative",
+    }}>
+      <span style={{
+        position: "absolute", top: 12, right: 12,
+        fontSize: 10, fontFamily: T.mono, fontWeight: 500, color: "#8B5CF6",
+        background: "#8B5CF610", borderRadius: 100, padding: "3px 10px", border: "1px solid #8B5CF625",
+      }}>
+        Custom
+      </span>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <AgentAvatar initials={initials} color={agent.color} size={40} />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{agent.name}</div>
+          <div style={{ fontSize: 10, color: T.textDim, marginTop: 2 }}>{agent.platforms.join(", ")}</div>
+        </div>
+      </div>
+      <p style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6, margin: 0, flex: 1 }}>{agent.tagline}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+        {agent.caps.slice(0, 3).map(c => <span key={c} style={{ fontSize: 10, color: agent.color, background: `${agent.color}14`, borderRadius: 5, padding: "3px 8px", fontFamily: T.mono }}>{c}</span>)}
+      </div>
+      <button onClick={onChat} style={{
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+        padding: "9px 16px", background: hov ? agent.color : `${agent.color}12`,
+        color: hov ? "#fff" : agent.color,
+        border: "none", borderRadius: 8, fontSize: 12, fontWeight: 500, fontFamily: T.mono,
+        cursor: "pointer", transition: "background .15s, color .15s",
+      }}>
+        Chat with Agent
+      </button>
+    </div>
+  );
+}
+
+
+// ── Create Agent Modal (multi-step wizard) ───────────────────────────────────
+
+const COLOR_PRESETS = [
+  "#D97706", "#FF4500", "#0A66C2", "#059669", "#E11D48",
+  "#8B5CF6", "#0891B2", "#7C3AED", "#DC2626", "#0D9488",
+  "#EA580C", "#4F46E5",
+];
+
+const PLATFORM_OPTIONS = [
+  "Twitter/X", "LinkedIn", "Reddit", "Discord", "TikTok",
+  "Email", "Blog / CMS", "Slack", "Telegram", "Any website",
+];
+
+function CreateAgentModal({ onClose, onSave }: { onClose: () => void; onSave: (agent: CustomAgent) => void }) {
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [color, setColor] = useState(COLOR_PRESETS[5]);
+  const [platforms, setPlatforms] = useState<string[]>([]);
+  const [capsText, setCapsText] = useState("");
+  const [starter, setStarter] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (step === 0) nameRef.current?.focus(); }, [step]);
+
+  const steps = ["Identity", "Platforms", "Capabilities", "Instructions"];
+
+  function togglePlatform(p: string) {
+    setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  }
+
+  function canAdvance() {
+    if (step === 0) return name.trim().length > 0 && tagline.trim().length > 0;
+    if (step === 1) return platforms.length > 0;
+    if (step === 2) return capsText.trim().length > 0;
+    return true;
+  }
+
+  function handleFinish() {
+    onSave({
+      name: name.trim(),
+      tagline: tagline.trim(),
+      color,
+      platforms,
+      caps: capsText.split("\n").map(s => s.trim()).filter(Boolean),
+      starter: starter.trim() || `Tell ${name.trim()} what you need `,
+      instructions: instructions.trim(),
+    });
+  }
+
+  const fieldStyle: React.CSSProperties = {
+    width: "100%", border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px",
+    fontSize: 13, fontFamily: T.sans, color: T.text, background: T.bg, outline: "none",
+    boxSizing: "border-box", transition: "border-color .15s",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontFamily: T.mono, color: T.textDim, letterSpacing: 0.4, marginBottom: 6, display: "block",
+    textTransform: "uppercase",
+  };
+
+  const initials = name.trim() ? name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "??";
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: T.surface, borderRadius: 16, width: 520, maxHeight: "88vh", overflowY: "auto",
+        boxShadow: "0 16px 64px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column",
+      }}>
+        {/* Header */}
+        <div style={{ padding: "20px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <AgentAvatar initials={initials} color={color} size={34} />
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 600, color: T.text, margin: 0 }}>
+                {name.trim() || "New Agent"}
+              </h2>
+              <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>Step {step + 1} of {steps.length}</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, color: T.textDim, cursor: "pointer", padding: 4, lineHeight: 1 }}>&times;</button>
+        </div>
+
+        {/* Step indicator */}
+        <div style={{ padding: "16px 24px 0", display: "flex", gap: 6 }}>
+          {steps.map((s, i) => (
+            <div key={s} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{
+                height: 3, borderRadius: 2,
+                background: i < step ? color : i === step ? color : T.border,
+                opacity: i <= step ? 1 : 0.4,
+                transition: "background .2s, opacity .2s",
+              }} />
+              <span style={{
+                fontSize: 10, fontFamily: T.mono,
+                color: i <= step ? T.textMid : T.textDim,
+                fontWeight: i === step ? 600 : 400,
+              }}>{s}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "20px 24px", flex: 1 }}>
+          {step === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Agent name</label>
+                <input ref={nameRef} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Competitor Tracker" style={fieldStyle} onFocus={e => (e.target.style.borderColor = color)} onBlur={e => (e.target.style.borderColor = T.border)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Tagline</label>
+                <input value={tagline} onChange={e => setTagline(e.target.value)} placeholder="One-liner describing what this agent does" style={fieldStyle} onFocus={e => (e.target.style.borderColor = color)} onBlur={e => (e.target.style.borderColor = T.border)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Color</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {COLOR_PRESETS.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setColor(c)}
+                      style={{
+                        width: 28, height: 28, borderRadius: 8, background: c, border: color === c ? `2.5px solid ${T.text}` : "2.5px solid transparent",
+                        cursor: "pointer", transition: "border-color .15s", position: "relative",
+                      }}
+                    >
+                      {color === c && (
+                        <svg width="12" height="12" viewBox="0 0 12 12" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)" }}>
+                          <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}>Where should this agent operate?</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {PLATFORM_OPTIONS.map(p => {
+                  const selected = platforms.includes(p);
+                  return (
+                    <button key={p} onClick={() => togglePlatform(p)} style={{
+                      padding: "8px 14px", borderRadius: 8, fontSize: 12, fontFamily: T.mono, fontWeight: 500,
+                      border: `1.5px solid ${selected ? color : T.border}`,
+                      background: selected ? `${color}14` : T.surface,
+                      color: selected ? color : T.textMid,
+                      cursor: "pointer", transition: "all .15s",
+                    }}>
+                      {selected && <span style={{ marginRight: 4 }}>&#10003;</span>}
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: 11, color: T.textDim, lineHeight: 1.5, marginTop: 2 }}>
+                Select the platforms your agent will have access to. You can change this later.
+              </p>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Capabilities (one per line)</label>
+                <textarea
+                  value={capsText}
+                  onChange={e => setCapsText(e.target.value)}
+                  placeholder={"Competitor monitoring\nPrice tracking\nFeature comparison\nWeekly reports"}
+                  rows={5}
+                  style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.55 }}
+                  onFocus={e => (e.target.style.borderColor = color)}
+                  onBlur={e => (e.target.style.borderColor = T.border)}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Starter prompt (optional)</label>
+                <input
+                  value={starter}
+                  onChange={e => setStarter(e.target.value)}
+                  placeholder={`e.g. "Track my top 3 competitors and alert me on changes"`}
+                  style={fieldStyle}
+                  onFocus={e => (e.target.style.borderColor = color)}
+                  onBlur={e => (e.target.style.borderColor = T.border)}
+                />
+                <p style={{ fontSize: 11, color: T.textDim, marginTop: 5 }}>
+                  This will pre-fill the chat input when a user starts a conversation with this agent.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Agent instructions (optional)</label>
+                <textarea
+                  value={instructions}
+                  onChange={e => setInstructions(e.target.value)}
+                  placeholder={"Describe how the agent should behave, its tone, constraints, and any specific rules.\n\ne.g. \"Always be concise and data-driven. Never speculate — only report facts from verified sources. Focus on pricing changes, new feature launches, and team hires.\""}
+                  rows={7}
+                  style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.55 }}
+                  onFocus={e => (e.target.style.borderColor = color)}
+                  onBlur={e => (e.target.style.borderColor = T.border)}
+                />
+              </div>
+
+              {/* Preview card */}
+              <div style={{ background: T.bg, borderRadius: 10, padding: 16, border: `1px solid ${T.border}` }}>
+                <div style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim, marginBottom: 10, letterSpacing: 0.4, textTransform: "uppercase" }}>Preview</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <AgentAvatar initials={initials} color={color} size={32} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{name.trim()}</div>
+                    <div style={{ fontSize: 10, color: T.textDim }}>{platforms.join(", ")}</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 12, color: T.textMid, lineHeight: 1.5, margin: 0, marginBottom: 8 }}>{tagline.trim()}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {capsText.split("\n").map(s => s.trim()).filter(Boolean).slice(0, 4).map(c => (
+                    <span key={c} style={{ fontSize: 10, color, background: `${color}14`, borderRadius: 5, padding: "2px 7px", fontFamily: T.mono }}>{c}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "0 24px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            onClick={() => step > 0 ? setStep(step - 1) : onClose()}
+            style={{
+              background: "none", border: `1px solid ${T.border}`, borderRadius: 8,
+              padding: "9px 18px", fontSize: 12, color: T.textMid, cursor: "pointer",
+              fontFamily: T.mono, fontWeight: 500,
+            }}
+          >
+            {step === 0 ? "Cancel" : "Back"}
+          </button>
+
+          <button
+            onClick={() => step < steps.length - 1 ? setStep(step + 1) : handleFinish()}
+            disabled={!canAdvance()}
+            style={{
+              background: !canAdvance() ? T.textDim : color,
+              color: "#fff", border: "none", borderRadius: 8,
+              padding: "9px 20px", fontSize: 12, fontWeight: 600,
+              fontFamily: T.mono, cursor: !canAdvance() ? "default" : "pointer",
+              opacity: !canAdvance() ? 0.5 : 1,
+              transition: "background .15s, opacity .15s",
+            }}
+          >
+            {step < steps.length - 1 ? "Continue" : "Create Agent"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -26,6 +26,11 @@ export default function AppShell({ user }: Props) {
   const [sidebarCollapsed, setSidebarCollapsed]       = useState(false);
   const { tasks } = useTasks(user.id);
 
+  const displayName = (user.user_metadata?.full_name as string)
+    ?? (user.user_metadata?.name as string)
+    ?? user.email
+    ?? "";
+
   const loadConversations = useCallback(async () => {
     try { setConversations(await getConversations()); } catch { /* non-critical */ }
   }, []);
@@ -109,7 +114,7 @@ export default function AppShell({ user }: Props) {
           <ContentStudioView
             key={chatKey}
             onNavigate={setTab}
-            userName={user.email ?? ""}
+            userName={displayName}
           />
         ) : tab === "chat" ? (
           <AriaChat
@@ -119,7 +124,7 @@ export default function AppShell({ user }: Props) {
             onNewConversation={handleNewConversation}
             initialPrompt={initialPrompt}
             onInitialPromptConsumed={() => setInitialPrompt(undefined)}
-            userName={user.email ?? ""}
+            userName={displayName}
             agentName={activeChatAgent ?? undefined}
             agentInfo={activeChatAgentInfo ?? undefined}
             onChatWithAgent={handleChatWithAgent}
