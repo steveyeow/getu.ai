@@ -217,7 +217,7 @@ export default function LandingPage({ onGetStarted }: Props) {
       {/* Hero */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "0 48px", gap: 40, overflow: "hidden" }}>
         {/* Left — copy */}
-        <div style={{ flex: "0 0 30%", animation: "fadeUp .45s ease both" }}>
+        <div style={{ flex: "0 0 36%", animation: "fadeUp .45s ease both" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, border: `1px solid ${T.greenMid}`, background: T.greenLight, marginBottom: 18 }}>
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.green, display: "inline-block" }} />
             <span style={{ fontSize: 11, color: T.green, fontFamily: T.mono }}>open beta</span>
@@ -242,7 +242,7 @@ export default function LandingPage({ onGetStarted }: Props) {
           <div style={{ flex: 1, minWidth: 0, height: "100%" }}>
             <DemoTerminal />
           </div>
-          <div style={{ width: 280, flexShrink: 0, height: "100%" }}>
+          <div style={{ width: 240, flexShrink: 0, height: "100%" }}>
             <LandingLiveActivity />
           </div>
         </div>
