@@ -8,7 +8,7 @@ interface Props {
 
 // Demo script shown in the interactive terminal
 const DEMO_STEPS = [
-  { role: "agent", text: "Hi, I'm ARIA, your AI chief of staff. Tell me about your product and let's get your first 100 users who love you." },
+  { role: "agent", text: "Hi, I'm ARIA, your chief of agent staff, tell me about your product and let's get you 100 users who truly love you." },
   { role: "user",  text: "B2B SaaS for logistics ops teams. Mid-market US companies." },
   { role: "agent", text: "Got it. Mapping your ICP — ops managers and supply chain directors at 200–2000 person companies in freight and 3PL.\n\nDeploying your agents now..." },
   { role: "sys",   text: "✓ SCOUT (signal finding + outreach)   ✓ PULSE (Twitter)" },
@@ -61,6 +61,14 @@ export default function LandingPage({ onGetStarted, onSignIn }: Props) {
           <DemoTerminal onEnter={onGetStarted} />
           <p style={{ marginTop: 8, fontSize: 11, color: T.textDim, fontFamily: T.mono, textAlign: "center" }}>↑ interactive demo</p>
         </div>
+      </div>
+
+      {/* PG quote */}
+      <div style={{ padding: "12px 48px", textAlign: "center", flexShrink: 0 }}>
+        <p style={{ fontSize: 12, color: T.textDim, fontFamily: T.serif, fontStyle: "italic", margin: 0 }}>
+          "It's better to have 100 users love you than 1 million kinda like you."
+          <span style={{ fontStyle: "normal", marginLeft: 6, fontSize: 11, color: T.textDim }}>— Paul Graham</span>
+        </p>
       </div>
     </div>
   );
