@@ -9,7 +9,7 @@ const DEV_USER = {
   id: "00000000-0000-0000-0000-000000000000",
   email: "steve@getu.ai",
   user_metadata: { full_name: "Steve" },
-} as User;
+} as unknown as User;
 
 export default function App() {
   const [view, setView] = useState<"landing" | "loading" | "app">("landing");

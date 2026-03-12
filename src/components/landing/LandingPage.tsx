@@ -380,12 +380,12 @@ function DemoTerminal() {
           const isLive = line.live && lines[lines.length - 1]?.id === line.id;
           return (
             <div key={line.id} style={{ marginBottom: 14, animation: "slideIn .2s ease" }}>
-              {line.role === "agent" && <AgentBubble line={line} isLive={isLive} onDone={onTyped} />}
-              {line.role === "user"  && <UserBubble  line={line} isLive={isLive} onDone={onTyped} />}
-              {line.role === "sys"   && <SysBubble   line={line} isLive={isLive} onDone={onTyped} />}
-              {line.role === "card"  && <CardBubble  line={line} isLive={isLive} onDone={onTyped} />}
-              {line.role === "plan"  && <PlanBubble  line={line} isLive={isLive} onDone={onTyped} />}
-              {line.role === "exec"  && <ExecBubble  line={line} isLive={isLive} onDone={onTyped} />}
+              {line.role === "agent" && <AgentBubble line={line} isLive={!!isLive} onDone={onTyped} />}
+              {line.role === "user"  && <UserBubble  line={line} isLive={!!isLive} onDone={onTyped} />}
+              {line.role === "sys"   && <SysBubble   line={line} isLive={!!isLive} onDone={onTyped} />}
+              {line.role === "card"  && <CardBubble  line={line} isLive={!!isLive} onDone={onTyped} />}
+              {line.role === "plan"  && <PlanBubble  line={line} isLive={!!isLive} onDone={onTyped} />}
+              {line.role === "exec"  && <ExecBubble  line={line} isLive={!!isLive} onDone={onTyped} />}
             </div>
           );
         })}
