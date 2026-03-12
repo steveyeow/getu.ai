@@ -497,7 +497,10 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
   }, [agentName, submit]);
 
   const firstName = userName
-    ? (userName.split("@")[0].split(/[._-]/)[0] ?? "there").replace(/^./, c => c.toUpperCase())
+    ? (userName.includes("@")
+        ? (userName.split("@")[0].split(/[._-]/)[0] ?? "there")
+        : userName.split(/\s+/)[0]
+      ).replace(/^./, c => c.toUpperCase())
     : "there";
 
   const isEmpty = messages.length === 0 && !streaming;
@@ -981,7 +984,10 @@ function QuickActionCard({ action, onRun }: { action: QuickAction; onRun: () => 
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: action.color, lineHeight: 1.3 }}>{action.agent}</span>
       </div>
-      <p style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, margin: 0, flex: 1 }}>{action.label}. {action.desc}</p>
+      <p style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, margin: 0, flex: 1 }}><span style={{ color: T.text, fontWeight: 500 }}>{action.label}.</span> {action.desc}</p>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <span style={{ fontSize: 10, fontFamily: T.mono, color: hov ? action.color : T.textDim, transition: "color .15s" }}>hire →</span>
+      </div>
     </button>
   );
 }
