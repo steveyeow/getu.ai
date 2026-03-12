@@ -56,16 +56,16 @@ interface TodoPlan {
 // ── Quick actions for ARIA landing ───────────────────────────────────────────
 
 interface QuickAction {
-  icon: string; label: string; desc: string; time: string; prompt: string; agent: string; color: string;
+  icon: string; label: string; desc: string; prompt: string; agent: string; color: string;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { icon: "TM", label: "Run my Twitter/X", desc: "Find signal posts, reply with value, and publish threads automatically", time: "~2 min", prompt: "I need you to manage my Twitter account. Find relevant signal posts and engage with them, also publish content.", agent: "Twitter Manager", color: "#D97706" },
-  { icon: "RS", label: "Hunt Reddit signals", desc: "Find signal communities and posts on Reddit where your ICP discusses pain", time: "~2 min", prompt: "Find Reddit communities where people discuss problems my product solves and surface the best signal posts.", agent: "Reddit Scout", color: "#FF4500" },
-  { icon: "LF", label: "Find ICP leads", desc: "Search LinkedIn, Twitter & Reddit for decision makers matching your ICP", time: "~3 min", prompt: "Find 50 leads matching my ICP on LinkedIn and Twitter — VP Marketing and Heads of Growth at early-stage startups.", agent: "Lead Finder", color: "#0A66C2" },
-  { icon: "CF", label: "Discover communities", desc: "Find Discord servers, Twitter groups, and Reddit spaces where your audience gathers", time: "~2 min", prompt: "Find Discord servers and communities where my target audience hangs out and ranks them by relevance.", agent: "Community Finder", color: "#059669" },
-  { icon: "CS", label: "Create TikTok content", desc: "Generate images, copy, and short-form video for TikTok and social media", time: "~3 min", prompt: "Create content for my TikTok — understand my product and make engaging short-form videos.", agent: "Content Studio", color: "#E11D48" },
-  { icon: "GO", label: "GEO Optimization", desc: "Make your site visible to AI search engines like ChatGPT, Perplexity & Claude", time: "~1 min", prompt: "Check the GEO status of my website and tell me how visible it is to AI search engines.", agent: "GEO Optimizer", color: "#0891B2" },
+  { icon: "TM", label: "Run my Twitter/X", desc: "Find signal posts, reply with value, and publish threads automatically", prompt: "I need you to manage my Twitter account. Find relevant signal posts and engage with them, also publish content.", agent: "Twitter Manager", color: "#D97706" },
+  { icon: "RS", label: "Hunt Reddit signals", desc: "Find signal communities and posts on Reddit where your ICP discusses pain", prompt: "Find Reddit communities where people discuss problems my product solves and surface the best signal posts.", agent: "Reddit Scout", color: "#FF4500" },
+  { icon: "LF", label: "Find ICP leads", desc: "Search LinkedIn, Twitter & Reddit for decision makers matching your ICP", prompt: "Find 50 leads matching my ICP on LinkedIn and Twitter — VP Marketing and Heads of Growth at early-stage startups.", agent: "Lead Finder", color: "#0A66C2" },
+  { icon: "CF", label: "Discover communities", desc: "Find Discord servers, Twitter groups, and Reddit spaces where your audience gathers", prompt: "Find Discord servers and communities where my target audience hangs out and ranks them by relevance.", agent: "Community Finder", color: "#059669" },
+  { icon: "CS", label: "Create TikTok content", desc: "Generate images, copy, and short-form video for TikTok and social media", prompt: "Create content for my TikTok — understand my product and make engaging short-form videos.", agent: "Content Studio", color: "#E11D48" },
+  { icon: "GO", label: "GEO Optimization", desc: "Make your site visible to AI search engines like ChatGPT, Perplexity & Claude", prompt: "Check the GEO status of my website and tell me how visible it is to AI search engines.", agent: "GEO Optimizer", color: "#0891B2" },
 ];
 
 // ── Scripted response generators ─────────────────────────────────────────────
@@ -979,13 +979,9 @@ function QuickActionCard({ action, onRun }: { action: QuickAction; onRun: () => 
         <div style={{ width: 26, height: 26, borderRadius: 7, background: `${action.color}14`, border: `1px solid ${action.color}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 600, color: action.color }}>{action.icon}</span>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.text, lineHeight: 1.3 }}>{action.label}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: action.color, lineHeight: 1.3 }}>{action.agent}</span>
       </div>
-      <p style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, margin: 0, flex: 1 }}>{action.desc}</p>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 10, fontFamily: T.mono, color: action.color, background: `${action.color}10`, borderRadius: 100, padding: "2px 8px" }}>{action.agent}</span>
-        <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{action.time}</span>
-      </div>
+      <p style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, margin: 0, flex: 1 }}>{action.label}. {action.desc}</p>
     </button>
   );
 }
