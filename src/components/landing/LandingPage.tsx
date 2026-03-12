@@ -8,7 +8,7 @@ interface Props {
 
 // Demo script shown in the interactive terminal
 const DEMO_STEPS = [
-  { role: "agent", text: "Hi, I'm ARIA. Tell me about your product and who you want to reach." },
+  { role: "agent", text: "Hi, I'm ARIA, your AI growth team. Tell me about your product and let's get your first 100 users who love you." },
   { role: "user",  text: "B2B SaaS for logistics ops teams. Mid-market US companies." },
   { role: "agent", text: "Got it. Mapping your ICP — ops managers and supply chain directors at 200–2000 person companies in freight and 3PL.\n\nDeploying your agents now..." },
   { role: "sys",   text: "✓ SCOUT (signal finding + outreach)   ✓ PULSE (Twitter)" },
