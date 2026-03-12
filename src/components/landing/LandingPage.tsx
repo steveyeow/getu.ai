@@ -217,7 +217,7 @@ export default function LandingPage({ onGetStarted }: Props) {
       {/* Hero */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "0 48px", gap: 40, overflow: "hidden" }}>
         {/* Left — copy */}
-        <div style={{ flex: "0 0 36%", animation: "fadeUp .45s ease both" }}>
+        <div style={{ flex: "0 0 30%", animation: "fadeUp .45s ease both" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, border: `1px solid ${T.greenMid}`, background: T.greenLight, marginBottom: 18 }}>
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.green, display: "inline-block" }} />
             <span style={{ fontSize: 11, color: T.green, fontFamily: T.mono }}>open beta</span>
@@ -237,10 +237,14 @@ export default function LandingPage({ onGetStarted }: Props) {
           </div>
         </div>
 
-        {/* Right — live activity feed */}
-        <div style={{ flex: 1, minWidth: 0, height: "calc(100% - 60px)", maxHeight: 560, animation: "fadeUp .45s .1s ease both", animationFillMode: "forwards", opacity: 0 }}>
-          <LandingLiveActivity />
-          <p style={{ marginTop: 8, fontSize: 11, color: T.textDim, fontFamily: T.mono, textAlign: "center" }}>↑ live agent activity — this is what GetU does for you</p>
+        {/* Right — terminal demo + live activity side by side */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", gap: 12, height: "calc(100% - 60px)", maxHeight: 560, animation: "fadeUp .45s .1s ease both", animationFillMode: "forwards", opacity: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, height: "100%" }}>
+            <DemoTerminal />
+          </div>
+          <div style={{ width: 280, flexShrink: 0, height: "100%" }}>
+            <LandingLiveActivity />
+          </div>
         </div>
       </div>
 
@@ -273,13 +277,6 @@ interface LandingLogLine {
   time: string;
   status: "done" | "in_progress";
 }
-
-const LANDING_AGENTS = [
-  { name: "Twitter Manager",  color: "#D97706", initials: "TM", stat: "47 posts" },
-  { name: "Reddit Scout",     color: "#FF4500", initials: "RS", stat: "34 signals" },
-  { name: "Lead Finder",      color: "#0A66C2", initials: "LF", stat: "86 leads" },
-  { name: "Community Finder", color: "#059669", initials: "CF", stat: "23 groups" },
-];
 
 const LANDING_SEED: Omit<LandingLogLine, "id">[] = [
   { agent: "Twitter Manager",  color: "#D97706", text: "Analyzing trending hashtags in B2B SaaS…",                  time: "09:41:02", status: "done" },
@@ -353,54 +350,18 @@ function LandingLiveActivity() {
       flexDirection: "column",
       height: "100%",
     }}>
-      {/* Title bar */}
-      <div style={{ padding: "9px 14px", background: "#e8e5de", display: "flex", alignItems: "center", gap: 6 }}>
-        {["#FF6057","#FFBD2E","#28CA41"].map(c => (
-          <span key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c, display: "inline-block" }} />
-        ))}
-        <span style={{ marginLeft: 8, fontSize: 11, color: T.textDim, fontFamily: T.mono, flex: 1 }}>getu.ai — agent activity</span>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.green, display: "inline-block", animation: "pulse 2s infinite" }} />
-        <span style={{ fontSize: 10, fontFamily: T.mono, color: T.green }}>live</span>
-      </div>
-
-      {/* Agent status bar */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${T.border}`, background: "#fff" }}>
-        {LANDING_AGENTS.map((a, i) => (
-          <div key={a.name} style={{
-            flex: 1, padding: "8px 10px",
-            borderRight: i < LANDING_AGENTS.length - 1 ? `1px solid ${T.border}` : "none",
-            display: "flex", alignItems: "center", gap: 7,
-          }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: 5,
-              background: `${a.color}14`, border: `1px solid ${a.color}30`,
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <span style={{ fontFamily: T.mono, fontSize: 8, fontWeight: 700, color: a.color }}>{a.initials}</span>
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 500, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
-              <div style={{ fontSize: 9, fontFamily: T.mono, color: a.color }}>{a.stat}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Log lines */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "6px 0" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {lines.map((line) => (
           <div key={line.id} style={{
-            padding: "5px 14px", fontSize: 11, lineHeight: 1.5,
-            animation: "slideIn .2s ease",
+            padding: "6px 16px", fontSize: 11, lineHeight: 1.5,
+            animation: "fadeUp .25s ease",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.textDim }}>{line.time}</span>
-              <span style={{
-                fontFamily: T.mono, fontSize: 9, fontWeight: 600, color: line.color,
-                background: `${line.color}10`, padding: "1px 5px", borderRadius: 3,
-              }}>{line.agent}</span>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.textDim }}>{line.time}</span>
+              <span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: line.color }}>{line.agent}</span>
             </div>
-            <div style={{ color: line.status === "in_progress" ? T.text : T.textMid, marginTop: 1, fontSize: 11.5 }}>
+            <div style={{ color: line.status === "in_progress" ? T.text : T.textMid, marginTop: 2 }}>
               {line.text}
               {line.status === "in_progress" && <span style={{ display: "inline-block", width: 2, height: 11, background: T.green, marginLeft: 3, verticalAlign: "-1px", animation: "blink 1s infinite" }} />}
             </div>
