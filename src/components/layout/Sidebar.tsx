@@ -89,6 +89,24 @@ export default function Sidebar({
         <NavItem icon={<SkillsIcon />} label="Skills" active={activeTab === "skills"} onClick={() => onTabChange("skills")} collapsed={collapsed} />
       </nav>
 
+      {/* Recent missions — hidden when collapsed */}
+      {!collapsed && tasks.length > 0 && (
+        <div style={{ padding: "10px 8px 4px" }}>
+          <div style={{ fontSize: 10, color: T.textDim, fontFamily: T.mono, letterSpacing: 0.5, padding: "2px 10px 6px", textTransform: "uppercase" }}>
+            Recent missions
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {tasks.slice(0, 5).map(task => (
+              <MissionItem
+                key={task.id}
+                task={task}
+                onClick={() => onTabChange("missions")}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Conversation history — hidden when collapsed */}
       {!collapsed && conversations.length > 0 && (
         <div style={{ flex: 1, overflowY: "auto", padding: "10px 8px 4px" }}>
@@ -309,6 +327,56 @@ function NavItem({ icon, label, active, onClick, badge, collapsed }: NavItemProp
           background: T.green,
         }} />
       )}
+    </button>
+  );
+}
+
+// ── Mission Item ──────────────────────────────────────────────────────────────
+
+const MISSION_STATUS_COLOR: Record<string, string> = {
+  completed: "#16a34a",
+  running:   "#D97706",
+  failed:    "#DC2626",
+  pending:   T.textDim,
+  paused:    T.textDim,
+};
+
+function MissionItem({ task, onClick }: { task: Task; onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  const statusColor = MISSION_STATUS_COLOR[task.status] ?? T.textDim;
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title={task.title}
+      style={{
+        display:      "flex",
+        alignItems:   "center",
+        gap:          8,
+        width:        "100%",
+        padding:      "5px 10px",
+        borderRadius: 6,
+        background:   hov ? T.sidebarHov : "transparent",
+        border:       "none",
+        textAlign:    "left",
+        cursor:       "pointer",
+        transition:   "background .1s",
+      }}
+    >
+      <span style={{
+        width: 6, height: 6, borderRadius: "50%",
+        background: statusColor, flexShrink: 0,
+        animation: task.status === "running" ? "pulse 2s infinite" : "none",
+      }} />
+      <span style={{
+        fontSize: 12, color: T.textMid,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        flex: 1,
+      }}>
+        {task.title}
+      </span>
     </button>
   );
 }

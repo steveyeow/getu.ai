@@ -14,24 +14,6 @@ const AGENT_COLOR: Record<string, string> = {
   "ARIA":             "#1a1714",
 };
 
-interface RecentMission {
-  id:        string;
-  skillId:   string;
-  agent:     string;
-  title:     string;
-  status:    "completed" | "running" | "failed";
-  timeAgo:   string;
-  result?:   string;
-}
-
-const RECENT_MISSIONS: RecentMission[] = [
-  { id: "rm1", skillId: "twitter_signal_engage", agent: "Twitter Manager", title: "Find & reply to GTM pain posts on X", status: "completed", timeAgo: "25 min ago", result: "8 signal posts found, 3 replies published" },
-  { id: "rm2", skillId: "reddit_signal_posts",   agent: "Reddit Scout",    title: "Scan r/SaaS for buying signals",      status: "completed", timeAgo: "1 hour ago", result: "14 signals across 4 subreddits" },
-  { id: "rm3", skillId: "find_icp_leads",         agent: "Lead Finder",     title: "Find VP Marketing at Series A",       status: "running",   timeAgo: "2 hours ago" },
-  { id: "rm4", skillId: "check_geo_status",       agent: "GEO Optimizer",   title: "GEO audit for getu.ai",              status: "completed", timeAgo: "3 hours ago", result: "Score: 72/100 — 3 priority fixes" },
-  { id: "rm5", skillId: "twitter_publish",         agent: "Twitter Manager", title: "Publish thread on outbound mistakes", status: "completed", timeAgo: "5 hours ago", result: "Thread published — 340 impressions" },
-  { id: "rm6", skillId: "find_communities",        agent: "Community Finder", title: "Discover SaaS founder communities", status: "failed",    timeAgo: "1 day ago",   result: "Rate limited — retry scheduled" },
-];
 
 interface Skill {
   id:          string;
@@ -212,9 +194,6 @@ export default function SkillsPage({ onChat }: { onChat: (prompt?: string) => vo
           </p>
         </div>
 
-        {/* Recent Missions */}
-        <RecentMissions missions={RECENT_MISSIONS} onRerun={(m) => onChat(SKILLS.find(s => s.id === m.skillId)?.example)} />
-
         <SectionLabel label="Available now" dot={T.green} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
           {phase1.map(skill => (
@@ -300,116 +279,6 @@ function SkillCard({ skill, expanded, onToggle, onChat, soon }: { skill: Skill; 
   );
 }
 
-// ── Recent Missions ─────────────────────────────────────────────────────────
-
-const STATUS_ICON: Record<RecentMission["status"], { color: string; label: string }> = {
-  completed: { color: "#16a34a", label: "Completed" },
-  running:   { color: "#D97706", label: "Running" },
-  failed:    { color: "#DC2626", label: "Failed" },
-};
-
-function RecentMissions({ missions, onRerun }: { missions: RecentMission[]; onRerun: (m: RecentMission) => void }) {
-  if (missions.length === 0) return null;
-
-  return (
-    <div style={{ marginBottom: 28 }}>
-      <SectionLabel label="Recent missions" dot={T.textMid} />
-      <div style={{
-        background: T.surface,
-        border: `1px solid ${T.border}`,
-        borderRadius: 10,
-        overflow: "hidden",
-      }}>
-        {missions.map((m, i) => (
-          <MissionRow key={m.id} mission={m} onRerun={() => onRerun(m)} isLast={i === missions.length - 1} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MissionRow({ mission, onRerun, isLast }: { mission: RecentMission; onRerun: () => void; isLast: boolean }) {
-  const [hov, setHov] = useState(false);
-  const color = AGENT_COLOR[mission.agent] ?? T.textMid;
-  const st = STATUS_ICON[mission.status];
-
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "11px 16px",
-        borderBottom: isLast ? "none" : `1px solid ${T.border}`,
-        background: hov ? T.surfaceHov : "transparent",
-        transition: "background .12s",
-        cursor: "pointer",
-      }}
-      onClick={onRerun}
-    >
-      {/* Status dot */}
-      <span
-        title={st.label}
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: "50%",
-          background: st.color,
-          flexShrink: 0,
-          animation: mission.status === "running" ? "pulse 2s infinite" : "none",
-        }}
-      />
-
-      {/* Agent badge */}
-      <span style={{
-        fontFamily: T.mono,
-        fontSize: 9,
-        fontWeight: 600,
-        color,
-        background: `${color}12`,
-        border: `1px solid ${color}22`,
-        borderRadius: 5,
-        padding: "2px 6px",
-        flexShrink: 0,
-        minWidth: 24,
-        textAlign: "center",
-      }}>
-        {mission.agent.split(" ").map(w => w[0]).join("").slice(0, 2)}
-      </span>
-
-      {/* Title + result */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 450, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {mission.title}
-        </div>
-        {mission.result && (
-          <div style={{ fontSize: 11, color: T.textMid, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {mission.result}
-          </div>
-        )}
-      </div>
-
-      {/* Time */}
-      <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim, flexShrink: 0, whiteSpace: "nowrap" }}>
-        {mission.timeAgo}
-      </span>
-
-      {/* Rerun hint on hover */}
-      <span style={{
-        fontSize: 10,
-        fontFamily: T.mono,
-        color: hov ? color : "transparent",
-        transition: "color .12s",
-        flexShrink: 0,
-        whiteSpace: "nowrap",
-      }}>
-        rerun →
-      </span>
-    </div>
-  );
-}
 
 function ChevronIcon({ rotated }: { rotated: boolean }) {
   return (
