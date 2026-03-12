@@ -70,7 +70,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 // ── Scripted response generators ─────────────────────────────────────────────
 
-function getAriaResponse(userMsg: string, turn: number): { text: string; planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; browserSetup?: { platform: string } } {
+function getAriaResponse(userMsg: string, turn: number): { text: string; planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; browserSetup?: { platform: string }; questions?: AgentQuestion[] } {
   if (turn === 0) {
     return {
       text: `Got it — let me quickly analyze what you've shared.
