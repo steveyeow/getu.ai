@@ -28,40 +28,53 @@ const MISSIONS: Mission[] = [
   {
     id: "m1", conversationId: "conv-tm-1",
     agentName: "Twitter Manager", agentColor: "#D97706",
-    title: "Publish 3 tweets on AI marketing",
-    goal: "Write and publish 3 high-engagement tweets about AI-powered marketing automation",
-    status: "running", schedule: "Daily, 9am–6pm", startedAt: "3 hours ago",
-    stats: [{ label: "POSTED", value: 1 }, { label: "DRAFTED", value: 2 }, { label: "IMPRESSIONS", value: 340 }],
+    title: "Grow @GetU_ai on Twitter/X",
+    goal: "Manage daily content publishing, find & reply to signal posts, and engage with ICP accounts to build audience",
+    status: "running", schedule: "Daily, 9am–6pm", startedAt: "12 days ago",
+    stats: [{ label: "POSTED", value: 47 }, { label: "REPLIES", value: 128 }, { label: "IMPRESSIONS", value: 12, suffix: "K" }],
     activity: [
       { text: "Published tweet: Top 3 GTM mistakes founders make", status: "done", time: "12m" },
-      { text: "Drafting tweet #2 on AI lead gen automation", status: "in_progress", time: "2m" },
-      { text: "Analyzed trending hashtags in B2B SaaS", status: "done", time: "18m" },
+      { text: "Replying to signal post by @saasfounder on outbound", status: "in_progress", time: "2m" },
+      { text: "Liked & engaged with 6 ICP-matching accounts", status: "done", time: "18m" },
     ],
   },
   {
     id: "m2", conversationId: "conv-rs-1",
     agentName: "Reddit Scout", agentColor: "#FF4500",
-    title: "Find signal posts about AI marketing",
-    goal: "Scan r/SaaS, r/startups, and r/marketing for posts discussing AI marketing pain",
-    status: "running", schedule: "Every 6 hours", startedAt: "2 hours ago",
-    stats: [{ label: "SIGNALS", value: 7 }, { label: "SUBS", value: 4 }, { label: "RELEVANCE", value: 82, suffix: "%" }],
+    title: "Reddit Signal Monitoring & Engagement",
+    goal: "Continuously scan target subreddits for buying-signal posts, draft helpful replies, and track engagement",
+    status: "running", schedule: "Every 6 hours", startedAt: "8 days ago",
+    stats: [{ label: "SIGNALS", value: 34 }, { label: "REPLIED", value: 19 }, { label: "RELEVANCE", value: 82, suffix: "%" }],
     activity: [
       { text: "Found 3 new signal posts on r/startups", status: "done", time: "8m" },
-      { text: "Scanning r/marketing for GTM automation posts", status: "in_progress", time: "1m" },
+      { text: "Drafting reply for 'Best tools for GTM automation?'", status: "in_progress", time: "1m" },
       { text: "Scored 5 posts by ICP relevance", status: "done", time: "22m" },
     ],
   },
   {
     id: "m3", conversationId: "conv-lf-1",
     agentName: "Lead Finder", agentColor: "#0A66C2",
-    title: "Find VP Marketing leads at Series A startups",
-    goal: "Search LinkedIn for VP Marketing and Head of Growth at Seed–Series B SaaS companies",
+    title: "ICP Lead Pipeline — Series A SaaS",
+    goal: "Build a qualified lead pipeline of VP Marketing & Head of Growth at Seed–Series B SaaS companies across LinkedIn, Twitter & Reddit",
     status: "running", schedule: "Weekly, 50 leads/batch", startedAt: "5 days ago",
-    stats: [{ label: "LEADS", value: 18 }, { label: "QUALIFIED", value: 12 }, { label: "OUTREACH", value: 4 }],
+    stats: [{ label: "LEADS", value: 86 }, { label: "QUALIFIED", value: 52 }, { label: "OUTREACH", value: 18 }],
     activity: [
       { text: "Identified 4 VP Marketing leads on LinkedIn", status: "done", time: "38m" },
       { text: "Cross-referencing leads with Twitter activity", status: "in_progress", time: "5m" },
       { text: "Scored 18 profiles by ICP quality", status: "done", time: "1h" },
+    ],
+  },
+  {
+    id: "m4", conversationId: "conv-cf-1",
+    agentName: "Community Finder", agentColor: "#059669",
+    title: "Map ICP Communities Across Platforms",
+    goal: "Discover and rank Discord servers, Reddit subreddits, and Twitter communities where your target audience is most active",
+    status: "running", schedule: "Every 12 hours", startedAt: "3 days ago",
+    stats: [{ label: "FOUND", value: 23 }, { label: "TOP TIER", value: 9 }, { label: "MEMBERS", value: 41, suffix: "K" }],
+    activity: [
+      { text: "Found 3 Discord servers for B2B SaaS founders", status: "done", time: "15m" },
+      { text: "Scanning Reddit for niche marketing communities", status: "in_progress", time: "3m" },
+      { text: "Ranked 6 communities by ICP density score", status: "done", time: "42m" },
     ],
   },
 ];
@@ -80,34 +93,42 @@ const SEED_LOGS: Omit<LogLine, "id">[] = [
   { agent: "Twitter Manager",  color: "#D97706", text: "Analyzing trending hashtags in B2B SaaS…",                    time: "09:41:02", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Connecting to Reddit API…",                                    time: "09:41:05", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Starting LinkedIn search: VP Marketing, Series A…",            time: "09:41:08", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Scanning Discord server directory for B2B SaaS…",              time: "09:41:11", status: "done" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Found 12 trending topics matching ICP criteria",               time: "09:41:14", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Scanning r/SaaS — 342 posts in last 24h",                      time: "09:41:18", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Querying Sales Navigator: 127 results",                        time: "09:41:22", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Found 'SaaS Growth Hackers' Discord — 2.4K members",           time: "09:41:25", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Signal match: 'Looking for alternatives to manual outreach'",  time: "09:41:28", status: "done" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Drafted tweet #1: 'Top 3 GTM mistakes founders make'",         time: "09:41:33", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Scoring 18 profiles by ICP quality…",                          time: "09:41:38", status: "done" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Tweet #1 published — tracking engagement",                     time: "09:41:45", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Analyzing r/SaaSMarketing — 18K members, high ICP density",    time: "09:41:49", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Signal match: 'Best tools for cold email automation?'",        time: "09:41:52", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "4 high-quality leads identified (score > 0.85)",               time: "09:41:58", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Scanning r/startups — 189 posts in last 24h",                  time: "09:42:04", status: "done" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Drafting tweet #2 on AI lead gen automation…",                 time: "09:42:10", status: "in_progress" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Cross-referencing leads with Twitter activity…",               time: "09:42:15", status: "in_progress" },
+  { agent: "Community Finder", color: "#059669", text: "Scanning Reddit for niche marketing communities…",             time: "09:42:18", status: "in_progress" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Scoring 5 posts by ICP relevance…",                            time: "09:42:20", status: "in_progress" },
 ];
 
 const STREAMING_LOGS: Omit<LogLine, "id">[] = [
   { agent: "Twitter Manager",  color: "#D97706", text: "Tweet #1 received 23 impressions in 2 min",                    time: "09:42:28", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "3 new signal posts matched on r/startups",                     time: "09:42:35", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Found Twitter community: #SaaSTwitter — 5.1K active",          time: "09:42:38", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Found Twitter account for lead: @sarahl_vp",                   time: "09:42:41", status: "done" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Engaging with @saasfounder's thread on outbound",              time: "09:42:48", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Signal match: 'Our manual outreach takes 20 hrs/week'",        time: "09:42:55", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Ranked 6 communities by ICP density — top: SaaS Growth",       time: "09:43:00", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Drafting personalized outreach for top 4 leads…",              time: "09:43:02", status: "in_progress" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Liked 4 posts from ICP-matching accounts",                     time: "09:43:10", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Scanning r/marketing — 276 posts in last 24h",                 time: "09:43:18", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Lead score update: 12 qualified out of 18",                    time: "09:43:25", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Discovered 2 new Discord servers for GTM founders",            time: "09:43:30", status: "done" },
   { agent: "Twitter Manager",  color: "#D97706", text: "Tweet #2 draft ready for review",                              time: "09:43:33", status: "done" },
   { agent: "Reddit Scout",     color: "#FF4500", text: "Signal match: 'Wish there was an AI to handle GTM'",           time: "09:43:40", status: "done" },
   { agent: "Lead Finder",      color: "#0A66C2", text: "Outreach draft sent for review — 4 messages ready",            time: "09:43:48", status: "done" },
+  { agent: "Community Finder", color: "#059669", text: "Community report ready — 9 groups, 14K total members",         time: "09:43:55", status: "done" },
 ];
 
 const AVAILABLE_AGENTS = [
@@ -117,6 +138,67 @@ const AVAILABLE_AGENTS = [
   { name: "Community Finder", color: "#059669", icon: "CF", tagline: "Find Discord servers, Twitter groups, and Reddit spaces where your audience gathers" },
   { name: "Content Studio",   color: "#E11D48", icon: "CS", tagline: "Generate images, copy, and short-form video for TikTok and social media" },
   { name: "GEO Optimizer",    color: "#0891B2", icon: "GO", tagline: "Make your site visible to AI search engines like ChatGPT, Perplexity & Claude" },
+];
+
+// ── Pending approvals — items across all missions that need user action ──────
+
+type ApprovalType = "tweet" | "reply" | "outreach" | "content" | "join";
+
+interface ApprovalItem {
+  id: string;
+  missionId: string;
+  agentName: string;
+  agentColor: string;
+  type: ApprovalType;
+  title: string;
+  preview: string;
+  context?: string;
+  createdAgo: string;
+}
+
+const APPROVAL_TYPE_META: Record<ApprovalType, { label: string; icon: string }> = {
+  tweet:    { label: "Publish Tweet",    icon: "✎" },
+  reply:    { label: "Send Reply",       icon: "↩" },
+  outreach: { label: "Send Outreach",    icon: "✉" },
+  content:  { label: "Publish Content",  icon: "▶" },
+  join:     { label: "Join Community",   icon: "+" },
+};
+
+const INITIAL_APPROVALS: ApprovalItem[] = [
+  {
+    id: "a1", missionId: "m1", agentName: "Twitter Manager", agentColor: "#D97706",
+    type: "tweet", title: "Thread: 5 signs you need to automate your GTM",
+    preview: "1/ Most founders wait too long to automate GTM. Here are 5 signs you're leaving growth on the table 🧵\n\n2/ You're spending >10hrs/week on manual outreach with <2% reply rates…",
+    createdAgo: "4m ago",
+  },
+  {
+    id: "a2", missionId: "m2", agentName: "Reddit Scout", agentColor: "#FF4500",
+    type: "reply", title: "Reply to r/startups: 'Best tools for GTM automation?'",
+    preview: "We've been using AI agents to handle signal-based outreach — finds posts like yours automatically and drafts context-aware replies. Cut our manual GTM time by 80%.",
+    context: "u/foundermark · r/startups · 23 upvotes",
+    createdAgo: "12m ago",
+  },
+  {
+    id: "a3", missionId: "m3", agentName: "Lead Finder", agentColor: "#0A66C2",
+    type: "outreach", title: "LinkedIn message to Sarah L., VP Marketing @ Ramp",
+    preview: "Hi Sarah — I noticed your recent post about scaling outbound at Ramp. We built an AI that finds buying-signal posts and auto-engages, which might help your team move faster…",
+    context: "Score: 0.92 · Series B · 120 employees",
+    createdAgo: "28m ago",
+  },
+  {
+    id: "a4", missionId: "m1", agentName: "Twitter Manager", agentColor: "#D97706",
+    type: "reply", title: "Reply to @saasfounder's thread on outbound",
+    preview: "Totally agree — cold emails are dying. We switched to signal-based replies (finding ppl already asking about the problem) and saw 4x more conversations.",
+    context: "@saasfounder · 1.2K impressions · 8 replies",
+    createdAgo: "35m ago",
+  },
+  {
+    id: "a5", missionId: "m4", agentName: "Community Finder", agentColor: "#059669",
+    type: "join", title: "Join Discord: SaaS Growth Hackers (2.4K members)",
+    preview: "High ICP density community focused on B2B SaaS growth tactics. Active channels: #outbound, #content-marketing, #product-led-growth. 34% match your target audience.",
+    context: "ICP density: 34% · Activity: 120 msgs/day",
+    createdAgo: "1h ago",
+  },
 ];
 
 interface Props {
@@ -134,12 +216,16 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
   const [statuses, setStatuses] = useState<Record<string, MissionStatus>>(
     () => Object.fromEntries(MISSIONS.map(m => [m.id, m.status]))
   );
+  const [approvals, setApprovals] = useState<ApprovalItem[]>(INITIAL_APPROVALS);
 
   function togglePause(id: string) {
     setStatuses(prev => ({ ...prev, [id]: prev[id] === "running" ? "paused" : "running" }));
   }
   function stop(id: string) {
     setStatuses(prev => ({ ...prev, [id]: "completed" }));
+  }
+  function handleApproval(id: string) {
+    setApprovals(prev => prev.filter(a => a.id !== id));
   }
 
   const runningCount = Object.values(statuses).filter(s => s === "running").length;
@@ -166,6 +252,11 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
           <NewMissionButton onSelectAgent={(agent) => onChatWithAgent?.({ name: agent.name, color: agent.color, tagline: agent.tagline, starter: "" })} />
         </div>
 
+        {/* Action panel — pending approvals */}
+        {approvals.length > 0 && (
+          <ActionPanel approvals={approvals} onApprove={handleApproval} onDismiss={handleApproval} />
+        )}
+
         {/* Mission cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginTop: 20 }}>
           {MISSIONS.map(m => (
@@ -183,6 +274,199 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
 
       {/* Right panel — live activity feed */}
       <LiveActivityFeed />
+    </div>
+  );
+}
+
+// ── Action Panel — pending approvals across all missions ─────────────────────
+
+function ActionPanel({ approvals, onApprove, onDismiss }: {
+  approvals: ApprovalItem[];
+  onApprove: (id: string) => void;
+  onDismiss: (id: string) => void;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div style={{
+          width: 20, height: 20, borderRadius: 6,
+          background: "#FEF3C7", border: "1px solid #FDE68A",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, lineHeight: 1,
+        }}>
+          <span style={{ color: "#D97706" }}>!</span>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: T.mono, color: T.text }}>
+          Needs Your Approval
+        </span>
+        <span style={{
+          fontSize: 10, fontFamily: T.mono, fontWeight: 600,
+          color: "#D97706", background: "#FEF3C7",
+          borderRadius: 100, padding: "2px 8px",
+          border: "1px solid #FDE68A",
+        }}>
+          {approvals.length}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {approvals.map(item => (
+          <ApprovalCard
+            key={item.id}
+            item={item}
+            expanded={expandedId === item.id}
+            onToggle={() => setExpandedId(prev => prev === item.id ? null : item.id)}
+            onApprove={() => onApprove(item.id)}
+            onDismiss={() => onDismiss(item.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss }: {
+  item: ApprovalItem; expanded: boolean;
+  onToggle: () => void; onApprove: () => void; onDismiss: () => void;
+}) {
+  const [approveHov, setApproveHov] = useState(false);
+  const [dismissHov, setDismissHov] = useState(false);
+  const [rowHov, setRowHov] = useState(false);
+  const meta = APPROVAL_TYPE_META[item.type];
+
+  return (
+    <div
+      onMouseEnter={() => setRowHov(true)}
+      onMouseLeave={() => setRowHov(false)}
+      style={{
+        background: T.surface,
+        border: `1px solid ${expanded ? item.agentColor + "40" : rowHov ? T.borderMid : T.border}`,
+        borderRadius: 10, overflow: "hidden",
+        transition: "all .15s",
+        boxShadow: expanded ? `0 2px 12px ${item.agentColor}08` : "none",
+      }}
+    >
+      {/* Collapsed row */}
+      <div
+        onClick={onToggle}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 14px", cursor: "pointer",
+        }}
+      >
+        {/* Agent dot */}
+        <div style={{
+          width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+          background: `${item.agentColor}14`, border: `1px solid ${item.agentColor}30`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{ fontSize: 10, color: item.agentColor }}>{meta.icon}</span>
+        </div>
+
+        {/* Title + agent */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {item.title}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <span style={{ fontSize: 10, fontFamily: T.mono, color: item.agentColor, fontWeight: 500 }}>{item.agentName}</span>
+            <span style={{ fontSize: 9, color: T.textDim }}>·</span>
+            <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{item.createdAgo}</span>
+          </div>
+        </div>
+
+        {/* Type badge */}
+        <span style={{
+          fontSize: 9, fontFamily: T.mono, fontWeight: 500,
+          color: "#D97706", background: "#FEF3C7",
+          borderRadius: 4, padding: "2px 7px",
+          border: "1px solid #FDE68A",
+          flexShrink: 0, textTransform: "uppercase", letterSpacing: "0.03em",
+        }}>
+          {meta.label}
+        </span>
+
+        {/* Expand chevron */}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}>
+          <path d="M3 4.5l3 3 3-3" stroke={T.textDim} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+
+      {/* Expanded preview */}
+      {expanded && (
+        <div style={{ padding: "0 14px 14px", animation: "fadeUp .15s ease" }}>
+          {/* Preview content */}
+          <div style={{
+            background: T.bg, borderRadius: 8, padding: 12,
+            border: `1px solid ${T.border}`,
+            fontSize: 12, color: T.textMid, lineHeight: 1.6,
+            whiteSpace: "pre-wrap", fontFamily: T.sans,
+          }}>
+            {item.preview}
+          </div>
+
+          {/* Context line */}
+          {item.context && (
+            <div style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim, marginTop: 8 }}>
+              {item.context}
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }} onClick={e => e.stopPropagation()}>
+            <button
+              onClick={onApprove}
+              onMouseEnter={() => setApproveHov(true)}
+              onMouseLeave={() => setApproveHov(false)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 16px", borderRadius: 7,
+                border: "none",
+                background: approveHov ? T.green : T.text,
+                color: "#fff",
+                fontSize: 11, fontFamily: T.mono, fontWeight: 500,
+                cursor: "pointer", transition: "all .15s",
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5L13 5" /></svg>
+              Approve
+            </button>
+            <button
+              onClick={onDismiss}
+              onMouseEnter={() => setDismissHov(true)}
+              onMouseLeave={() => setDismissHov(false)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 16px", borderRadius: 7,
+                border: `1px solid ${dismissHov ? "#DC2626" + "40" : T.border}`,
+                background: dismissHov ? "#DC2626" + "08" : "transparent",
+                color: dismissHov ? "#DC2626" : T.textMid,
+                fontSize: 11, fontFamily: T.mono, fontWeight: 500,
+                cursor: "pointer", transition: "all .15s",
+              }}
+            >
+              Dismiss
+            </button>
+            <div style={{ flex: 1 }} />
+            <button
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "7px 12px", borderRadius: 7,
+                border: `1px solid ${T.border}`,
+                background: "transparent",
+                color: T.textDim,
+                fontSize: 11, fontFamily: T.mono, fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M11 1H5a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2V3a2 2 0 00-2-2z" /><path d="M6 5h4M6 8h4M6 11h2" /></svg>
+              Edit
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
