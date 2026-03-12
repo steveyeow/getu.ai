@@ -17,127 +17,191 @@ interface DemoStep {
   status?: string;
 }
 
-const DEMO_STEPS: DemoStep[] = [
-  // ── Act 1: Meet ARIA, describe your product ──
+type AgentName = "ARIA" | "getu.ai" | "Twitter Manager" | "Reddit Scout" | "Lead Finder" | "Community Finder" | "Content Studio";
+
+interface DemoStepExt extends DemoStep {
+  agent?: AgentName;
+}
+
+// ── Demo Script 1: Multi-agent overview ──────────────────────────────────────
+
+const DEMO_OVERVIEW: DemoStepExt[] = [
   {
     role: "agent",
-    text: "Hi, I'm ARIA — your AI chief of staff for growth.\nTell me about your product, and I'll build a GTM strategy and deploy agents to find your first 100 users.",
+    agent: "getu.ai",
+    text: "Tell me about your product — I'll find your first users.",
   },
   {
     role: "user",
-    text: "We built Patchwork — an API monitoring tool for DevOps teams at mid-market SaaS companies. We catch 5xx errors before PagerDuty does.",
-    delay: 600,
-  },
-
-  // ── Act 2: ARIA analyzes & builds strategy ──
-  {
-    role: "agent",
-    text: "Great. Let me map your Ideal Customer Profile.",
-  },
-  {
-    role: "card",
-    label: "ICP ANALYSIS",
-    text: "",
-    items: [
-      "Persona: DevOps Leads & SREs",
-      "Company: 200–2,000 person SaaS",
-      "Stack: Microservices, K8s, CI/CD heavy",
-      "Pain: Alert fatigue, slow incident response",
-      "Channels: Twitter/X, Reddit r/devops, Hacker News",
-    ],
-  },
-  {
-    role: "agent",
-    text: "Here's my recommended GTM plan:",
+    text: "Patchwork — API monitoring for DevOps. We catch 5xx before PagerDuty does.",
+    delay: 500,
   },
   {
     role: "plan",
-    label: "GTM STRATEGY",
+    label: "PLAN MODE",
     text: "",
     items: [
-      "Phase 1 — Signal Hunting: find people complaining about monitoring gaps on Twitter, Reddit & HN",
-      "Phase 2 — Warm Outreach: craft personalized replies referencing their exact pain",
-      "Phase 3 — Content Flywheel: publish \"5xx war stories\" thread series on Twitter to build authority",
-      "Phase 4 — Community Seeding: engage in r/devops and DevOps Discord with value-first answers",
+      "Twitter Manager — find signal posts & engage",
+      "Reddit Scout — find relevant subreddits & threads",
+      "Lead Finder — discover ICP leads on LinkedIn",
+      "Community Finder — join Discord & Slack groups",
+      "Content Studio — create & publish short videos",
     ],
+    delay: 300,
   },
   {
     role: "user",
-    text: "Love it. Let's start with Phase 1 & 2 — deploy the agents.",
+    text: "Start with Twitter Manager and Lead Finder.",
     delay: 500,
   },
-
-  // ── Act 3: Deploy agents ──
   {
     role: "sys",
-    text: "✓ SCOUT deployed — scanning Twitter, Reddit, HN for signal posts\n✓ PULSE deployed — preparing content calendar\n✓ COMMUNITY deployed — monitoring r/devops & Discord",
-  },
-
-  // ── Act 4: SCOUT finds leads ──
-  {
-    role: "agent",
-    text: "SCOUT found 14 high-intent signals in the last 2 hours:",
-  },
-  {
-    role: "card",
-    label: "SCOUT — LIVE SIGNALS",
-    text: "",
-    items: [
-      "@sre_sarah: \"wish I could catch 5xx spikes before PagerDuty wakes me up at 3am\"",
-      "r/devops: \"our monitoring is garbage, evaluated 6 tools and still lost\"",
-      "HN thread: \"best API observability tools in 2026? nothing feels right\"",
-      "@k8s_mike: \"spent 4h debugging a latency spike that a good monitor would've caught in seconds\"",
-    ],
-  },
-
-  // ── Act 5: Agent executes — Twitter reply ──
-  {
-    role: "agent",
-    text: "I drafted a personalized reply to @sre_sarah. Here's the plan:",
+    text: "✓ Twitter Manager deployed\n✓ Lead Finder deployed",
+    delay: 300,
   },
   {
     role: "exec",
-    label: "TWITTER AGENT — EXECUTION",
+    agent: "Twitter Manager",
+    label: "TWITTER MANAGER",
     text: "",
     items: [
-      "→ Target: @sre_sarah's tweet about PagerDuty alert fatigue",
-      "→ Action: Reply with empathy + mention Patchwork's pre-alert detection",
-      "→ Draft: \"Felt this — we built Patchwork specifically to catch the 5xx spike 90s before PD fires. Happy to show you a 5-min demo if useful.\"",
-      "✓ Tone check: Passed (helpful, not salesy)",
-      "⏳ Status: Awaiting your approval",
+      "Found 9 signal posts matching your ICP",
+      "Drafted 3 replies · ⏳ awaiting your approval",
     ],
+    delay: 400,
+  },
+  {
+    role: "user",
+    text: "Approve all 3.",
+    delay: 400,
   },
   {
     role: "sys",
-    text: "↳ Reply approved & posted to @sre_sarah's thread\n↳ 2 more drafts ready for review in Mission Center",
+    text: "✓ 3 replies posted · 1 reply received, asked for demo",
+    delay: 300,
   },
-
-  // ── Act 6: Results rolling in ──
   {
-    role: "agent",
-    text: "24-hour agent activity summary:",
+    role: "exec",
+    agent: "Lead Finder",
+    label: "LEAD FINDER · LINKEDIN",
+    text: "",
+    items: [
+      "Found 30 ICP leads: SREs at 200–2k SaaS companies",
+      "Drafted 5 connection requests · ⏳ awaiting approval",
+    ],
+    delay: 400,
   },
   {
     role: "card",
-    label: "DAILY REPORT",
+    label: "RESULTS · 24H",
     text: "",
     items: [
-      "Signals found: 14 high-intent leads across 3 platforms",
-      "Replies sent: 6 personalized (100% approved by you)",
-      "Engagement: 3 replies received, 2 asked for demos",
-      "Content published: 1 Twitter thread (\"5xx war stories\") — 1.2k impressions",
-      "Pipeline: 2 demo calls booked for this week",
+      "📊 9 signals found · 30 leads discovered",
+      "💬 3 replies sent · 5 connections pending",
+      "🎯 1 demo booked · 2 follow-ups queued",
     ],
-  },
-  {
-    role: "agent",
-    text: "Your agents are running 24/7. I'll keep surfacing the best leads and optimizing outreach.\n\nReady to see your live dashboard?",
+    delay: 400,
   },
 ];
 
+// ── Demo Script 2: Twitter deep-dive ─────────────────────────────────────────
+
+const DEMO_TWITTER: DemoStepExt[] = [
+  {
+    role: "user",
+    text: "Help me grow on Twitter. Find people with API monitoring pain.",
+    delay: 500,
+  },
+  {
+    role: "sys",
+    text: "✓ Twitter Manager deployed",
+    delay: 300,
+  },
+  {
+    role: "agent",
+    agent: "Twitter Manager",
+    text: "Found 9 signal posts matching your ICP. Here are the top 3:",
+    delay: 400,
+  },
+  {
+    role: "card",
+    label: "SIGNALS FOUND",
+    text: "",
+    items: [
+      "🔥 @sre_sarah: \"wish I could catch 5xx before PagerDuty wakes me\"",
+      "🔥 @k8s_mike: \"spent 4h on a latency spike a good monitor would catch\"",
+      "🔥 @devops_jen: \"evaluated 6 tools, none catch errors early enough\"",
+    ],
+    delay: 400,
+  },
+  {
+    role: "agent",
+    agent: "Twitter Manager",
+    text: "Drafted a reply to @sre_sarah:",
+    delay: 300,
+  },
+  {
+    role: "exec",
+    agent: "Twitter Manager",
+    label: "DRAFT REPLY",
+    text: "",
+    items: [
+      "\"We built Patchwork to catch the 5xx 90s before PD fires. 5-min demo?\"",
+      "✓ Tone: empathetic, not salesy",
+      "⏳ Awaiting your approval",
+    ],
+    delay: 400,
+  },
+  {
+    role: "user",
+    text: "Looks good, approve it.",
+    delay: 400,
+  },
+  {
+    role: "sys",
+    text: "✓ Reply posted · @sre_sarah liked + replied \"yes please\"",
+    delay: 300,
+  },
+  {
+    role: "agent",
+    agent: "Twitter Manager",
+    text: "Also published an 8-tweet thread for authority building:",
+    delay: 400,
+  },
+  {
+    role: "exec",
+    agent: "Twitter Manager",
+    label: "THREAD PUBLISHED",
+    text: "",
+    items: [
+      "\"10k API incidents — what 95% had in common\" (8 tweets)",
+      "⏳ Awaiting your approval to pin",
+    ],
+    delay: 400,
+  },
+  {
+    role: "user",
+    text: "Pin it.",
+    delay: 300,
+  },
+  {
+    role: "card",
+    label: "TWITTER · 24H",
+    text: "",
+    items: [
+      "📊 9 signals · 6 replies sent (all approved)",
+      "📈 2.1k impressions · 47 likes · 12 RTs",
+      "🎯 2 demos booked · 3 new followers",
+    ],
+    delay: 400,
+  },
+];
+
+const DEMO_SCRIPTS = [DEMO_OVERVIEW, DEMO_TWITTER];
+
 const LOOP_PAUSE_MS = 3500;
 
-export default function LandingPage({ onGetStarted, onSignIn }: Props) {
+export default function LandingPage({ onGetStarted }: Props) {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: T.bg, overflow: "hidden" }}>
       {/* Nav */}
@@ -145,37 +209,25 @@ export default function LandingPage({ onGetStarted, onSignIn }: Props) {
         <span style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 500, color: T.text }}>
           getu<span style={{ color: T.green }}>.ai</span>
         </span>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <a href="https://x.com/getu_ai" target="_blank" rel="noopener noreferrer" style={{ color: T.textDim, padding: 6, display: "flex", alignItems: "center", transition: "color .15s" }} onMouseEnter={e => (e.currentTarget.style.color = T.text)} onMouseLeave={e => (e.currentTarget.style.color = T.textDim)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          </a>
-          <a href="https://discord.gg/srRJpbcMjF" target="_blank" rel="noopener noreferrer" style={{ color: T.textDim, padding: 6, display: "flex", alignItems: "center", transition: "color .15s" }} onMouseEnter={e => (e.currentTarget.style.color = T.text)} onMouseLeave={e => (e.currentTarget.style.color = T.textDim)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-          </a>
-          <div style={{ width: 1, height: 16, background: T.border, margin: "0 4px" }} />
-          <button onClick={onSignIn} style={{ background: "none", border: "none", fontSize: 14, color: T.textMid, padding: "7px 14px", cursor: "pointer" }}>
-            Sign in
-          </button>
-          <button onClick={onGetStarted} style={{ background: T.text, color: "#fff", border: "none", padding: "7px 18px", borderRadius: 7, fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+        <button onClick={onGetStarted} style={{ background: T.text, color: "#fff", border: "none", padding: "7px 18px", borderRadius: 7, fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
             Get started →
           </button>
-        </div>
       </nav>
 
       {/* Hero */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "0 48px", gap: 56, overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "0 48px", gap: 40, overflow: "hidden" }}>
         {/* Left — copy */}
-        <div style={{ flex: "0 0 50%", animation: "fadeUp .45s ease both" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, border: `1px solid ${T.greenMid}`, background: T.greenLight, marginBottom: 20 }}>
+        <div style={{ flex: "0 0 36%", animation: "fadeUp .45s ease both" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 100, border: `1px solid ${T.greenMid}`, background: T.greenLight, marginBottom: 18 }}>
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.green, display: "inline-block" }} />
             <span style={{ fontSize: 11, color: T.green, fontFamily: T.mono }}>open beta</span>
           </div>
-          <h1 style={{ fontFamily: T.serifDisplay, fontSize: 36, lineHeight: 1.2, color: T.text, marginBottom: 16, fontWeight: 300 }}>
-            Meet your AI marketing team,<br />
-            <span style={{ color: T.green }}>ready to deploy.</span>
+          <h1 style={{ fontFamily: T.serifDisplay, fontSize: 34, lineHeight: 1.2, color: T.text, marginBottom: 14, fontWeight: 500 }}>
+            Your GTM Agents,<br />
+            <span style={{ color: T.green }}>get your first 100 users love you.</span>
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.75, color: T.textMid, marginBottom: 26, maxWidth: 420 }}>
-            Describe your product. GetU.ai learns your goals, maps your ICP, builds the strategy, and deploys specialist agents that find leads, publish content, run outreach — all on autopilot.
+          <p style={{ fontSize: 14, lineHeight: 1.7, color: T.textMid, marginBottom: 22, maxWidth: 380 }}>
+            Describe your product. GetU deploys agents that find signal posts and engage, discover ICP-matching leads, join relevant communities, create and publish content, optimize GEO & SEO — and more, all on autopilot.
           </p>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <button onClick={onGetStarted} style={{ background: T.text, color: "#fff", border: "none", padding: "11px 22px", borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
@@ -186,19 +238,27 @@ export default function LandingPage({ onGetStarted, onSignIn }: Props) {
         </div>
 
         {/* Right — auto-playing terminal demo */}
-        <div style={{ flex: "0 0 46%", height: "calc(100% - 120px)", maxHeight: 460, animation: "fadeUp .45s .1s ease both", animationFillMode: "forwards", opacity: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, height: "calc(100% - 60px)", maxHeight: 560, animation: "fadeUp .45s .1s ease both", animationFillMode: "forwards", opacity: 0 }}>
           <DemoTerminal />
           <p style={{ marginTop: 8, fontSize: 11, color: T.textDim, fontFamily: T.mono, textAlign: "center" }}>↑ live preview — loops automatically</p>
         </div>
       </div>
 
-      {/* PG quote */}
-      <div style={{ padding: "12px 48px", textAlign: "center", flexShrink: 0 }}>
-        <p style={{ fontSize: 12, color: T.textDim, fontFamily: T.serif, fontStyle: "italic", margin: 0 }}>
+      {/* Footer */}
+      <footer style={{ padding: "14px 48px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ fontSize: 13, color: T.textDim, fontFamily: T.serifDisplay, fontStyle: "italic", fontWeight: 300, margin: 0 }}>
           "It's better to have 100 users love you than 1 million kinda like you."
-          <span style={{ fontStyle: "normal", marginLeft: 6, fontSize: 11, color: T.textDim }}>— Paul Graham</span>
+          <span style={{ fontStyle: "normal", marginLeft: 8, fontFamily: T.mono, fontSize: 11 }}>— Paul Graham</span>
         </p>
-      </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <a href="https://x.com/getu_ai" target="_blank" rel="noopener noreferrer" style={{ color: T.textDim, padding: 4, display: "flex", alignItems: "center", transition: "color .15s" }} onMouseEnter={e => (e.currentTarget.style.color = T.text)} onMouseLeave={e => (e.currentTarget.style.color = T.textDim)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="https://discord.gg/srRJpbcMjF" target="_blank" rel="noopener noreferrer" style={{ color: T.textDim, padding: 4, display: "flex", alignItems: "center", transition: "color .15s" }} onMouseEnter={e => (e.currentTarget.style.color = T.text)} onMouseLeave={e => (e.currentTarget.style.color = T.textDim)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -211,6 +271,7 @@ interface LineData {
   label?: string;
   items?: string[];
   status?: string;
+  agent?: AgentName;
   id: number;
   live?: boolean;
 }
@@ -220,8 +281,11 @@ function DemoTerminal() {
   const [step, setStep]   = useState(0);
   const [busy, setBusy]   = useState(false);
   const [fading, setFading] = useState(false);
+  const [scriptIdx, setScriptIdx] = useState(0);
   const endRef            = useRef<HTMLDivElement>(null);
   const containerRef      = useRef<HTMLDivElement>(null);
+
+  const currentScript = DEMO_SCRIPTS[scriptIdx];
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -233,13 +297,14 @@ function DemoTerminal() {
       setLines([]);
       setStep(0);
       setBusy(false);
+      setScriptIdx(idx => (idx + 1) % DEMO_SCRIPTS.length);
       setFading(false);
     }, 600);
   }, []);
 
   useEffect(() => {
-    if (step >= DEMO_STEPS.length || busy) return;
-    const item = DEMO_STEPS[step];
+    if (step >= currentScript.length || busy) return;
+    const item = currentScript[step];
     const delay = item.delay ?? (step === 0 ? 800 : 700);
 
     const t = setTimeout(() => {
@@ -250,19 +315,19 @@ function DemoTerminal() {
         label: item.label,
         items: item.items,
         status: item.status,
+        agent: item.agent,
         id: step,
         live: true,
       }]);
     }, delay);
     return () => clearTimeout(t);
-  }, [step, busy]);
+  }, [step, busy, currentScript]);
 
-  // When the full demo finishes, wait then loop
   useEffect(() => {
-    if (step < DEMO_STEPS.length || busy) return;
+    if (step < currentScript.length || busy) return;
     const t = setTimeout(resetDemo, LOOP_PAUSE_MS);
     return () => clearTimeout(t);
-  }, [step, busy, resetDemo]);
+  }, [step, busy, resetDemo, currentScript]);
 
   function onTyped() {
     setBusy(false);
@@ -285,7 +350,19 @@ function DemoTerminal() {
         {["#FF6057","#FFBD2E","#28CA41"].map(c => (
           <span key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c, display: "inline-block" }} />
         ))}
-        <span style={{ marginLeft: 8, fontSize: 11, color: T.textDim, fontFamily: T.mono }}>getu.ai — agent workspace</span>
+        <span style={{ marginLeft: 8, fontSize: 11, color: T.textDim, fontFamily: T.mono, flex: 1 }}>getu.ai — get your first 100 users love you</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          {DEMO_SCRIPTS.map((_, i) => (
+            <span key={i} style={{
+              width: i === scriptIdx ? 14 : 6,
+              height: 6,
+              borderRadius: 3,
+              background: i === scriptIdx ? T.green : T.borderMid,
+              display: "inline-block",
+              transition: "all .3s ease",
+            }} />
+          ))}
+        </div>
       </div>
 
       {/* Messages */}
@@ -318,12 +395,26 @@ function DemoTerminal() {
   );
 }
 
+// ── Agent color map ───────────────────────────────────────────────────────────
+
+const AGENT_COLORS: Record<AgentName, { color: string; bg: string; border: string }> = {
+  "ARIA":             { color: T.green,    bg: T.greenLight, border: T.greenMid },
+  "getu.ai":          { color: T.text,     bg: "#f0eee9",    border: T.borderMid },
+  "Twitter Manager":  { color: "#D97706",  bg: "#fffbeb",    border: "#fcd34d"  },
+  "Reddit Scout":     { color: "#FF4500",  bg: "#fff7ed",    border: "#fdba74"  },
+  "Lead Finder":      { color: "#0A66C2",  bg: "#eff6ff",    border: "#93c5fd"  },
+  "Community Finder": { color: "#059669",  bg: "#ecfdf5",    border: "#6ee7b7"  },
+  "Content Studio":   { color: "#E11D48",  bg: "#fff1f2",    border: "#fda4af"  },
+};
+
 // ── Bubble Components ─────────────────────────────────────────────────────────
 
 function AgentBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean; onDone: () => void }) {
+  const agentName = line.agent ?? "ARIA";
+  const ac = AGENT_COLORS[agentName];
   return (
     <>
-      <div style={{ fontSize: 10, color: T.green, fontFamily: T.mono, marginBottom: 3 }}>ARIA</div>
+      <div style={{ fontSize: 10, color: ac.color, fontFamily: T.mono, marginBottom: 3 }}>{agentName}</div>
       <div style={{ fontSize: 12.5, color: T.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
         {isLive ? <Typewriter text={line.text} onDone={onDone} /> : line.text}
       </div>
@@ -332,12 +423,11 @@ function AgentBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean
 }
 
 function UserBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean; onDone: () => void }) {
-  const step = DEMO_STEPS[line.id];
   return (
     <>
       <div style={{ fontSize: 10, color: T.textDim, fontFamily: T.mono, marginBottom: 3 }}>YOU</div>
       <div style={{ fontSize: 12.5, color: T.textMid }}>
-        {isLive ? <Typewriter text={step.text} speed={22} onDone={onDone} /> : step.text}
+        {isLive ? <Typewriter text={line.text} speed={22} onDone={onDone} /> : line.text}
       </div>
     </>
   );
@@ -430,26 +520,28 @@ function PlanBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean;
 }
 
 function ExecBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean; onDone: () => void }) {
+  const ac = line.agent ? AGENT_COLORS[line.agent] : AGENT_COLORS.ARIA;
   return (
     <div style={{
-      border: `1px solid ${T.greenMid}`,
+      border: `1px solid ${ac.border}`,
       borderRadius: 8,
       overflow: "hidden",
-      background: "#f0fdf4",
+      background: ac.bg,
     }}>
       <div style={{
         padding: "5px 10px",
-        background: T.greenLight,
+        background: ac.bg,
         fontSize: 10,
         fontFamily: T.mono,
         fontWeight: 500,
-        color: T.green,
+        color: ac.color,
         letterSpacing: "0.5px",
         display: "flex",
         alignItems: "center",
         gap: 5,
+        borderBottom: `1px solid ${ac.border}`,
       }}>
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 2l8 6-8 6V2z" fill={T.green}/></svg>
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 2l8 6-8 6V2z" fill={ac.color}/></svg>
         {line.label}
       </div>
       <div style={{ padding: "8px 10px" }}>

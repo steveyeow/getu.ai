@@ -167,7 +167,7 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
         </div>
 
         {/* Mission cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginTop: 20 }}>
           {MISSIONS.map(m => (
             <MissionCard
               key={m.id}

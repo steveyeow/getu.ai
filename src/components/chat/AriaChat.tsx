@@ -56,15 +56,15 @@ interface TodoPlan {
 // ── Quick actions for ARIA landing ───────────────────────────────────────────
 
 interface QuickAction {
-  icon: string; label: string; desc: string; prompt: string; agent: string; color: string;
+  icon: string; label: string; desc: string; prompt: string; agent: string; color: string; isNew?: boolean;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
+  { icon: "CS", label: "Create TikTok content", desc: "Generate images, copy, and short-form video for TikTok and social media", prompt: "Create content for my TikTok — understand my product and make engaging short-form videos.", agent: "Content Studio", color: "#E11D48", isNew: true },
   { icon: "TM", label: "Run my Twitter/X", desc: "Find signal posts, reply with value, and publish threads automatically", prompt: "I need you to manage my Twitter account. Find relevant signal posts and engage with them, also publish content.", agent: "Twitter Manager", color: "#D97706" },
   { icon: "RS", label: "Hunt Reddit signals", desc: "Find signal communities and posts on Reddit where your ICP discusses pain", prompt: "Find Reddit communities where people discuss problems my product solves and surface the best signal posts.", agent: "Reddit Scout", color: "#FF4500" },
   { icon: "LF", label: "Find ICP leads", desc: "Search LinkedIn, Twitter & Reddit for decision makers matching your ICP", prompt: "Find 50 leads matching my ICP on LinkedIn and Twitter — VP Marketing and Heads of Growth at early-stage startups.", agent: "Lead Finder", color: "#0A66C2" },
   { icon: "CF", label: "Discover communities", desc: "Find Discord servers, Twitter groups, and Reddit spaces where your audience gathers", prompt: "Find Discord servers and communities where my target audience hangs out and ranks them by relevance.", agent: "Community Finder", color: "#059669" },
-  { icon: "CS", label: "Create TikTok content", desc: "Generate images, copy, and short-form video for TikTok and social media", prompt: "Create content for my TikTok — understand my product and make engaging short-form videos.", agent: "Content Studio", color: "#E11D48" },
   { icon: "GO", label: "GEO Optimization", desc: "Make your site visible to AI search engines like ChatGPT, Perplexity & Claude", prompt: "Check the GEO status of my website and tell me how visible it is to AI search engines.", agent: "GEO Optimizer", color: "#0891B2" },
 ];
 
@@ -560,6 +560,7 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
               </div>
             </div>
             <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder="Tell me your product — I'll craft a GTM strategy and deploy the right agents." />
+
             <div style={{ marginTop: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                 <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim, letterSpacing: 0.5, textTransform: "uppercase" }}>or pick an agent to start</span>
@@ -980,6 +981,7 @@ function QuickActionCard({ action, onRun }: { action: QuickAction; onRun: () => 
           <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 600, color: action.color }}>{action.icon}</span>
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: action.color, lineHeight: 1.3 }}>{action.agent}</span>
+        {action.isNew && <span style={{ fontSize: 8, fontFamily: T.mono, fontWeight: 600, color: action.color, background: `${action.color}0C`, padding: "1px 5px", borderRadius: 3, border: `1px solid ${action.color}18`, lineHeight: 1.4 }}>NEW</span>}
       </div>
       <p style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, margin: 0, flex: 1 }}><span style={{ color: T.text, fontWeight: 500 }}>{action.label}.</span> {action.desc}</p>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
