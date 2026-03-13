@@ -285,7 +285,13 @@ function ActionPanel({ approvals, onApprove, onDismiss }: {
   onApprove: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(approvals[0]?.id ?? null);
+
+  useEffect(() => {
+    if (expandedId && !approvals.find(a => a.id === expandedId)) {
+      setExpandedId(approvals[0]?.id ?? null);
+    }
+  }, [approvals, expandedId]);
 
   return (
     <div style={{ marginTop: 18 }}>
