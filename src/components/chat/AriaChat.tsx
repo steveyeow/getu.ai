@@ -42,6 +42,32 @@ interface LeadActivity {
   outreachDraft?: string;
 }
 
+interface CommunityActivity {
+  name:        string;
+  platform:    "Discord" | "Reddit" | "Slack";
+  memberCount: string;
+  icpDensity:  "High" | "Medium" | "Low";
+  description: string;
+  url?:        string;
+}
+
+interface RedditActivity {
+  subreddit:   string;
+  postTitle:   string;
+  postUrl?:    string;
+  upvotes:     number;
+  commentDraft?: string;
+  status:      "found" | "drafted" | "posted";
+}
+
+interface ContentActivity {
+  type:        "thread" | "video_script" | "image";
+  title:       string;
+  preview:     string;
+  platform:    string;
+  status:      "drafted" | "published" | "scheduled";
+}
+
 interface GeoAuditItem {
   category:    string;
   label:       string;
@@ -62,6 +88,9 @@ interface ChatMessage {
   activities?: TwitterActivity[];
   leads?: LeadActivity[];
   geoAudits?: GeoAuditItem[];
+  communities?: CommunityActivity[];
+  redditPosts?: RedditActivity[];
+  contentDrafts?: ContentActivity[];
 }
 
 interface PlanItem {
@@ -256,7 +285,7 @@ const AGENT_QUESTIONS: Record<string, AgentQuestion[]> = {
       { id: "slack", label: "Slack" },
       { id: "all", label: "All platforms" },
     ]},
-    { id: "region", prompt: "Which region?", options: [
+    { id: "region", prompt: "Which regions?", allowMultiple: true, options: [
       { id: "global", label: "Global" },
       { id: "na", label: "North America" },
       { id: "europe", label: "Europe" },
@@ -590,6 +619,43 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
           { name: "Jen Park", title: "Marketing Lead", company: "Vercel (Series D · 300 employees)", profileUrl: "https://linkedin.com/in/jenpark", icpScore: 87, signals: ["Active in SaaS Growth community on Discord", "Commented on competitor's LinkedIn post"] },
         ]}},
       ];
+    } else if (agent === "Community Finder") {
+      mockMessages = [
+        { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", communities: [
+          { name: "SaaS Growth Hacks", platform: "Discord", memberCount: "4,200 members", icpDensity: "High", description: "Founders & growth leads sharing GTM playbooks, outbound strategies, and tool reviews", url: "https://discord.gg/saasgrowth" },
+        ]}},
+        { delay: 4500, msg: { id: `act-${Date.now()}-2`, role: "assistant", content: "", communities: [
+          { name: "r/SaaS", platform: "Reddit", memberCount: "89k members", icpDensity: "High", description: "Active subreddit for SaaS founders — frequent posts about outbound, lead gen, and marketing automation" },
+          { name: "r/startups", platform: "Reddit", memberCount: "1.2M members", icpDensity: "Medium", description: "Broad startup community — good for visibility, lower ICP density but high volume" },
+        ]}},
+        { delay: 7000, msg: { id: `act-${Date.now()}-3`, role: "assistant", content: "", communities: [
+          { name: "GTM Operators", platform: "Slack", memberCount: "1,800 members", icpDensity: "High", description: "Invite-only community of VP Marketing & Growth leads at Series A–C startups", url: "https://gtmoperators.com" },
+        ]}},
+      ];
+    } else if (agent === "Reddit Scout") {
+      mockMessages = [
+        { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", redditPosts: [
+          { subreddit: "r/SaaS", postTitle: "What tools are you using for outbound? Everything feels manual and broken.", postUrl: "https://reddit.com/r/SaaS/comments/abc123", upvotes: 47, commentDraft: "We ran into the same problem — tried 6 different tools before building our own AI agents that handle signal detection and draft personalized replies. Happy to share what worked.", status: "drafted" },
+        ]}},
+        { delay: 4500, msg: { id: `act-${Date.now()}-2`, role: "assistant", content: "", redditPosts: [
+          { subreddit: "r/startups", postTitle: "How do you find your first 100 customers without a sales team?", postUrl: "https://reddit.com/r/startups/comments/def456", upvotes: 92, status: "found" },
+        ]}},
+        { delay: 7000, msg: { id: `act-${Date.now()}-3`, role: "assistant", content: "", redditPosts: [
+          { subreddit: "r/Entrepreneur", postTitle: "Spent $5k on LinkedIn ads, got 2 leads. There has to be a better way to reach B2B buyers.", postUrl: "https://reddit.com/r/Entrepreneur/comments/ghi789", upvotes: 134, commentDraft: "LinkedIn ads are tough for early-stage. What's working for us: AI agents that monitor Reddit, Twitter, and LinkedIn for people actively expressing the pain your product solves — then draft authentic replies. Way cheaper than ads and the leads are warmer.", status: "drafted" },
+        ]}},
+      ];
+    } else if (agent === "Content Studio") {
+      mockMessages = [
+        { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", contentDrafts: [
+          { type: "thread", title: "Why manual GTM doesn't scale — a thread", preview: "1/ Every founder I talk to says the same thing: \"We know we need to do outbound, but we don't have the bandwidth.\"\n\nHere's why manual GTM breaks at Series A — and what to do instead. 🧵", platform: "Twitter/X", status: "drafted" },
+        ]}},
+        { delay: 4500, msg: { id: `act-${Date.now()}-2`, role: "assistant", content: "", contentDrafts: [
+          { type: "video_script", title: "60s TikTok: The lead gen problem", preview: "[Hook] You just spent 4 hours researching leads on LinkedIn. You found 3.\n[Problem] That's 80 minutes per lead. At that rate, you need a full-time employee just to fill your pipeline.\n[Solution] What if AI agents did the research for you — across Twitter, Reddit, and LinkedIn — while you focused on closing?", platform: "TikTok", status: "drafted" },
+        ]}},
+        { delay: 7000, msg: { id: `act-${Date.now()}-3`, role: "assistant", content: "", contentDrafts: [
+          { type: "image", title: "LinkedIn carousel: 5 signs your GTM needs automation", preview: "Slide 1: 5 Signs Your GTM Process Needs Automation\nSlide 2: You spend more time researching than selling\nSlide 3: Your outbound is copy-paste templates\nSlide 4: You can't track which channels actually work\nSlide 5: Your team burns out before hitting quota", platform: "LinkedIn", status: "drafted" },
+        ]}},
+      ];
     } else {
       mockMessages = [
         { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", activities: [
@@ -719,6 +785,9 @@ function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, on
         {message.activities?.map((act, i) => <TwitterActivityCard key={i} activity={act} agentColor={agentInfo?.color} />)}
         {message.leads?.map((lead, i) => <LeadActivityCard key={i} lead={lead} agentColor={agentInfo?.color} />)}
         {message.geoAudits && <GeoAuditCard items={message.geoAudits} />}
+        {message.communities?.map((c, i) => <CommunityActivityCard key={i} community={c} />)}
+        {message.redditPosts?.map((r, i) => <RedditActivityCard key={i} post={r} />)}
+        {message.contentDrafts?.map((d, i) => <ContentActivityCard key={i} draft={d} />)}
       </div>
     </div>
   );
@@ -1157,6 +1226,18 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
     setAnswers(prev => {
       const cur = prev[q.id] ?? [];
       if (q.allowMultiple) {
+        const allOpt = q.options.find(o => o.id === "all");
+        if (allOpt && optId === "all") {
+          const allIds = q.options.map(o => o.id);
+          const allSelected = allIds.every(id => cur.includes(id));
+          return { ...prev, [q.id]: allSelected ? [] : allIds };
+        }
+        if (allOpt && optId !== "all") {
+          let next = cur.includes(optId) ? cur.filter(x => x !== optId && x !== "all") : [...cur.filter(x => x !== CUSTOM_ID), optId];
+          const nonAllIds = q.options.filter(o => o.id !== "all").map(o => o.id);
+          if (nonAllIds.every(id => next.includes(id))) next = [...next.filter(x => x !== "all"), "all"];
+          return { ...prev, [q.id]: next };
+        }
         return { ...prev, [q.id]: cur.includes(optId) ? cur.filter(x => x !== optId) : [...cur.filter(x => x !== CUSTOM_ID), optId] };
       }
       return { ...prev, [q.id]: [optId] };
@@ -1538,6 +1619,103 @@ function GeoAuditCard({ items }: { items: GeoAuditItem[] }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function CommunityActivityCard({ community }: { community: CommunityActivity }) {
+  const platformCfg: Record<string, { color: string; icon: string }> = {
+    Discord: { color: "#5865F2", icon: "💬" },
+    Reddit:  { color: "#FF4500", icon: "🔴" },
+    Slack:   { color: "#4A154B", icon: "💼" },
+  };
+  const cfg = platformCfg[community.platform] ?? platformCfg.Discord;
+  const densityCfg = { High: { color: "#16A34A", bg: "#16A34A12" }, Medium: { color: "#D97706", bg: "#D9770612" }, Low: { color: T.textDim, bg: T.bg } };
+  const dc = densityCfg[community.icpDensity];
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "14px 16px", width: "100%", animation: "fadeUp .3s ease" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${cfg.color}14`, border: `1px solid ${cfg.color}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 15 }}>{cfg.icon}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{community.name}</span>
+            {community.url && <a href={community.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: cfg.color, textDecoration: "none" }}>Join ↗</a>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <span style={{ fontSize: 10, fontFamily: T.mono, color: cfg.color, fontWeight: 600 }}>{community.platform}</span>
+            <span style={{ fontSize: 10, color: T.textDim }}>·</span>
+            <span style={{ fontSize: 10, color: T.textDim, fontFamily: T.mono }}>{community.memberCount}</span>
+          </div>
+        </div>
+        <span style={{ fontSize: 10, fontFamily: T.mono, fontWeight: 600, color: dc.color, background: dc.bg, padding: "2px 7px", borderRadius: 4, border: `1px solid ${dc.color}20` }}>{community.icpDensity} ICP</span>
+      </div>
+      <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6 }}>{community.description}</div>
+    </div>
+  );
+}
+
+function RedditActivityCard({ post }: { post: RedditActivity }) {
+  const statusCfg = { found: { label: "Signal found", color: "#D97706" }, drafted: { label: "Reply drafted", color: "#0891B2" }, posted: { label: "Posted", color: "#16A34A" } };
+  const sc = statusCfg[post.status];
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "14px 16px", width: "100%", animation: "fadeUp .3s ease" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 14, flexShrink: 0 }}>🔴</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontFamily: T.mono, color: "#FF4500", fontWeight: 600 }}>{post.subreddit}</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: T.text, lineHeight: 1.5, marginTop: 2 }}>{post.postTitle}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, color: T.textDim }}>⬆</span>
+          <span style={{ fontSize: 11, fontFamily: T.mono, fontWeight: 600, color: T.textMid }}>{post.upvotes}</span>
+        </div>
+      </div>
+
+      {post.postUrl && <a href={post.postUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#FF4500", textDecoration: "none", display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }} onMouseEnter={e => { e.currentTarget.style.textDecoration = "underline"; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = "none"; }}>View post ↗</a>}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 8, borderTop: `1px solid ${T.border}` }}>
+        <span style={{ fontSize: 9, fontFamily: T.mono, fontWeight: 600, color: sc.color, background: `${sc.color}12`, padding: "2px 6px", borderRadius: 4, border: `1px solid ${sc.color}20`, letterSpacing: "0.03em" }}>{sc.label}</span>
+      </div>
+
+      {post.commentDraft && (
+        <div style={{ marginTop: 8, padding: "8px 12px", borderLeft: "2.5px solid rgba(255,69,0,0.3)", background: "rgba(255,69,0,0.04)", borderRadius: "0 6px 6px 0" }}>
+          <div style={{ fontSize: 9, fontFamily: T.mono, fontWeight: 600, color: "#FF4500", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>Draft comment</div>
+          <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6, fontStyle: "italic" }}>{post.commentDraft}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContentActivityCard({ draft }: { draft: ContentActivity }) {
+  const typeCfg: Record<string, { icon: string; label: string }> = {
+    thread: { icon: "🧵", label: "Thread" },
+    video_script: { icon: "🎬", label: "Video Script" },
+    image: { icon: "🖼️", label: "Carousel" },
+  };
+  const tc = typeCfg[draft.type] ?? typeCfg.thread;
+  const statusCfg = { drafted: { label: "Draft ready", color: "#D97706" }, published: { label: "Published", color: "#16A34A" }, scheduled: { label: "Scheduled", color: "#0891B2" } };
+  const sc = statusCfg[draft.status];
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "14px 16px", width: "100%", animation: "fadeUp .3s ease" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 16 }}>{tc.icon}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{draft.title}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{tc.label}</span>
+            <span style={{ fontSize: 10, color: T.textDim }}>·</span>
+            <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{draft.platform}</span>
+          </div>
+        </div>
+        <span style={{ fontSize: 9, fontFamily: T.mono, fontWeight: 600, color: sc.color, background: `${sc.color}12`, padding: "2px 6px", borderRadius: 4, border: `1px solid ${sc.color}20`, letterSpacing: "0.03em" }}>{sc.label}</span>
+      </div>
+      <div style={{ padding: "8px 12px", background: T.bg, borderRadius: 6, border: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{draft.preview}</div>
+      </div>
     </div>
   );
 }
