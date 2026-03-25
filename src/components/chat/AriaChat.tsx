@@ -19,6 +19,19 @@ interface AgentQuestion {
   allowCustom?: boolean;
 }
 
+interface TwitterActivity {
+  tweetAuthor:  string;
+  tweetHandle:  string;
+  tweetText:    string;
+  tweetUrl?:    string;
+  actions: {
+    type:       "liked" | "replied" | "reposted" | "followed";
+    replyText?: string;
+    status:     "success" | "pending";
+  }[];
+  timestamp:    string;
+}
+
 interface ChatMessage {
   id:     string;
   role:   "user" | "assistant";
@@ -26,8 +39,9 @@ interface ChatMessage {
   planItems?: PlanItem[];
   taskCards?: TaskCard[];
   todoPlans?: TodoPlan[];
-  browserSetup?: { platform: string };
+  connectAccount?: { platform: string };
   questions?: AgentQuestion[];
+  activities?: TwitterActivity[];
 }
 
 interface PlanItem {
@@ -70,7 +84,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 // ── Scripted response generators ─────────────────────────────────────────────
 
-function getAriaResponse(userMsg: string, turn: number): { text: string; planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; browserSetup?: { platform: string }; questions?: AgentQuestion[] } {
+function getAriaResponse(userMsg: string, turn: number): { text: string; planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; connectAccount?: { platform: string }; questions?: AgentQuestion[] } {
   if (turn === 0) {
     return {
       text: `Got it — let me quickly analyze what you've shared.
@@ -164,20 +178,16 @@ const BROWSER_AGENTS = new Set(["Twitter Manager", "Reddit Scout", "Lead Finder"
 
 const AGENT_QUESTIONS: Record<string, AgentQuestion[]> = {
   "Twitter Manager": [
-    { id: "product", prompt: "How should I learn about your product?", options: [
-      { id: "url", label: "I'll paste my website URL" },
-      { id: "describe", label: "I'll describe it in a message" },
-      { id: "existing", label: "You already know — use my profile" },
+    { id: "region", prompt: "Which region should I focus on?", options: [
+      { id: "global", label: "Global" },
+      { id: "na", label: "North America" },
+      { id: "europe", label: "Europe" },
+      { id: "apac", label: "Asia Pacific" },
     ]},
-    { id: "schedule", prompt: "How often should I run?", options: [
-      { id: "continuous", label: "Continuously (every few hours)" },
-      { id: "daily", label: "Once a day" },
+    { id: "schedule", prompt: "When should I be active?", options: [
+      { id: "247", label: "24/7" },
+      { id: "business", label: "Business hours (9am–6pm)" },
       { id: "manual", label: "Only when I ask" },
-    ]},
-    { id: "tone", prompt: "What tone should I use on Twitter?", options: [
-      { id: "casual", label: "Casual & conversational" },
-      { id: "professional", label: "Professional & authoritative" },
-      { id: "witty", label: "Witty & opinionated" },
     ]},
     { id: "approval", prompt: "Should I post automatically or draft for review?", options: [
       { id: "draft", label: "Draft for my approval first" },
@@ -185,62 +195,60 @@ const AGENT_QUESTIONS: Record<string, AgentQuestion[]> = {
     ]},
   ],
   "Reddit Scout": [
-    { id: "product", prompt: "How should I learn about your product?", options: [
-      { id: "url", label: "I'll paste my website URL" },
-      { id: "describe", label: "I'll describe it in a message" },
-      { id: "existing", label: "You already know — use my profile" },
+    { id: "region", prompt: "Which region should I focus on?", options: [
+      { id: "global", label: "Global" },
+      { id: "na", label: "North America" },
+      { id: "europe", label: "Europe" },
+      { id: "apac", label: "Asia Pacific" },
     ]},
-    { id: "schedule", prompt: "How often should I scan Reddit?", options: [
+    { id: "schedule", prompt: "How often should I scan?", options: [
       { id: "continuous", label: "Every 6 hours" },
       { id: "daily", label: "Once a day" },
       { id: "manual", label: "Only when I ask" },
     ]},
-    { id: "approval", prompt: "Should I auto-reply or draft comments for review?", options: [
+    { id: "approval", prompt: "Should I auto-reply or draft for review?", options: [
       { id: "draft", label: "Draft for my approval" },
       { id: "auto", label: "Auto-reply (I trust you)" },
     ]},
   ],
   "Lead Finder": [
-    { id: "product", prompt: "How should I learn about your product?", options: [
-      { id: "url", label: "I'll paste my website URL" },
-      { id: "describe", label: "I'll describe it in a message" },
-      { id: "existing", label: "You already know — use my profile" },
+    { id: "region", prompt: "Which region should I focus on?", options: [
+      { id: "global", label: "Global" },
+      { id: "na", label: "North America" },
+      { id: "europe", label: "Europe" },
+      { id: "apac", label: "Asia Pacific" },
     ]},
-    { id: "count", prompt: "How many leads do you need?", options: [
+    { id: "count", prompt: "How many leads per batch?", options: [
       { id: "20", label: "~20 leads" },
       { id: "50", label: "~50 leads" },
       { id: "100", label: "100+ leads" },
     ]},
-    { id: "schedule", prompt: "One-time search or recurring?", options: [
+    { id: "schedule", prompt: "One-time or recurring?", options: [
       { id: "once", label: "One-time batch" },
-      { id: "weekly", label: "Weekly batches" },
+      { id: "weekly", label: "Weekly" },
       { id: "biweekly", label: "Every 2 weeks" },
     ]},
   ],
   "Community Finder": [
-    { id: "product", prompt: "How should I learn about your product?", options: [
-      { id: "url", label: "I'll paste my website URL" },
-      { id: "describe", label: "I'll describe it in a message" },
-      { id: "existing", label: "You already know — use my profile" },
-    ]},
     { id: "platforms", prompt: "Which platforms should I search?", allowMultiple: true, options: [
       { id: "discord", label: "Discord" },
       { id: "reddit", label: "Reddit" },
       { id: "slack", label: "Slack" },
       { id: "all", label: "All platforms" },
     ]},
-    { id: "schedule", prompt: "Should I keep monitoring for new communities?", options: [
+    { id: "region", prompt: "Which region?", options: [
+      { id: "global", label: "Global" },
+      { id: "na", label: "North America" },
+      { id: "europe", label: "Europe" },
+      { id: "apac", label: "Asia Pacific" },
+    ]},
+    { id: "schedule", prompt: "One-time or keep monitoring?", options: [
       { id: "once", label: "One-time scan" },
       { id: "weekly", label: "Monitor weekly" },
       { id: "monthly", label: "Monitor monthly" },
     ]},
   ],
   "Content Studio": [
-    { id: "product", prompt: "How should I learn about your product?", options: [
-      { id: "url", label: "I'll paste my website URL" },
-      { id: "describe", label: "I'll describe it in a message" },
-      { id: "existing", label: "You already know — use my profile" },
-    ]},
     { id: "frequency", prompt: "How many posts per week?", options: [
       { id: "3", label: "3 posts/week" },
       { id: "5", label: "5 posts/week" },
@@ -257,8 +265,9 @@ const AGENT_QUESTIONS: Record<string, AgentQuestion[]> = {
     ]},
   ],
   "GEO Optimizer": [
-    { id: "url", prompt: "What is your website URL?", allowCustom: true, options: [
-      { id: "custom", label: "I'll type it below" },
+    { id: "depth", prompt: "How deep should I audit?", options: [
+      { id: "quick", label: "Quick scan (top-level)" },
+      { id: "full", label: "Full audit (recommended)" },
     ]},
     { id: "schedule", prompt: "Should I re-audit periodically?", options: [
       { id: "once", label: "One-time audit" },
@@ -331,16 +340,45 @@ const AGENT_PLANS: Record<string, AgentPlanDef> = {
 };
 
 
-function getAgentResponse(agentName: string, _agentColor: string, userMsg: string, turn: number): { text: string; planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; browserSetup?: { platform: string }; questions?: AgentQuestion[] } {
-  if (turn === 0) {
-    const needsBrowser = BROWSER_AGENTS.has(agentName);
-    const platformLabel = agentName === "Twitter Manager" ? "Twitter/X" : agentName === "Reddit Scout" ? "Reddit" : agentName === "Lead Finder" ? "LinkedIn & Twitter" : "Discord & Reddit";
-    const questions = AGENT_QUESTIONS[agentName];
+function getAgentGreeting(agentName: string): { text: string; connectAccount?: { platform: string } } {
+  const greetings: Record<string, { text: string; platform?: string }> = {
+    "Twitter Manager": {
+      text: `Hey! I'm **Twitter Manager**. Here's what I can do for you on X:\n\n- **Find signal posts** — discover posts where people express the exact pain your product solves\n- **Engage authentically** — like, reply, and build relationships with your ICP\n- **Publish content** — write and post threads that position you as a thought leader\n\n**To get started, paste your product's website URL** and I'll analyze your product and audience.`,
+      platform: "Twitter/X",
+    },
+    "Reddit Scout": {
+      text: `Hey! I'm **Reddit Scout**. Here's what I can do:\n\n- **Find signal subreddits** — discover communities where your ICP discusses pain points\n- **Surface buying signals** — find posts where people are actively looking for solutions\n- **Draft authentic replies** — write value-adding comments for your review\n\n**Paste your product's website URL** to get started.`,
+      platform: "Reddit",
+    },
+    "Lead Finder": {
+      text: `Hey! I'm **Lead Finder**. I find decision makers matching your ICP across:\n\n- **LinkedIn** — search by job title, company size, industry, and recent activity\n- **Twitter/X** — find leads who are active and engaged in relevant conversations\n- **Cross-referencing** — score and rank leads by ICP match quality\n\n**Paste your product's website URL** and I'll start finding your ideal leads.`,
+      platform: "LinkedIn & Twitter",
+    },
+    "Community Finder": {
+      text: `Hey! I'm **Community Finder**. I discover where your audience hangs out:\n\n- **Discord servers** — find active communities in your niche\n- **Reddit communities** — surface subreddits with high ICP density\n- **Slack groups** — identify professional communities where your buyers gather\n\n**Paste your product's website URL** to get started.`,
+      platform: "Discord & Reddit",
+    },
+    "Content Studio": {
+      text: `Hey! I'm **Content Studio**. I create engaging content for your brand:\n\n- **Short-form video** — TikTok scripts, product demos, and pain-point explainers\n- **Visual content** — images, thumbnails, and graphics for social media\n- **Copy** — captions, threads, and content calendars\n\n**Paste your product's website URL** and I'll create content that resonates with your audience.`,
+    },
+    "GEO Optimizer": {
+      text: `Hey! I'm **GEO Optimizer**. I help you become visible to AI search engines:\n\n- **AI bot access** — check if GPTBot, ClaudeBot, and PerplexityBot can crawl your site\n- **Structured data** — audit your schema.org markup and metadata\n- **AI search visibility** — test whether ChatGPT, Perplexity, and Claude know about you\n\n**Paste your website URL** and I'll run a full GEO audit.`,
+    },
+  };
 
+  const config = greetings[agentName] ?? { text: `Hey! I'm **${agentName}**. Paste your product's website URL and I'll get started.` };
+  return {
+    text: config.text,
+    connectAccount: config.platform ? { platform: config.platform } : undefined,
+  };
+}
+
+function getAgentResponse(agentName: string, _agentColor: string, userMsg: string, turn: number): { text: string; planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; connectAccount?: { platform: string }; questions?: AgentQuestion[] } {
+  if (turn === 0) {
+    const questions = AGENT_QUESTIONS[agentName];
     return {
-      text: "Before I start, I need a few things from you to be effective. Answer the questions below and I'll build a tailored plan.",
+      text: `Great, let me analyze that.\n\n**Here's what I understand about your product:**\n- You're building a tool that helps teams automate their go-to-market execution\n- **Value prop:** Replaces manual outbound, content creation, and community engagement with AI agents\n- **Target audience:** Founders, marketing leads, and growth teams at early-stage startups (Seed–Series B)\n\nUse the options below to set your preferences, or type your own.`,
       questions,
-      browserSetup: needsBrowser ? { platform: platformLabel } : undefined,
     };
   }
 
@@ -348,12 +386,12 @@ function getAgentResponse(agentName: string, _agentColor: string, userMsg: strin
     const plan = AGENT_PLANS[agentName];
     if (plan) {
       return {
-        text: "Thanks — I now have a clear picture of your product and audience. Here's my plan:",
+        text: "Perfect, I have everything I need. Here's my execution plan:",
         todoPlans: plan.todos.map((t, i) => ({ id: i + 1, label: t.label, detail: t.detail })),
       };
     }
     return {
-      text: "Thanks — I now have a clear picture. Here's my plan:",
+      text: "Perfect. Here's my execution plan:",
       todoPlans: [
         { id: 1, label: "Analyze your product and target audience" },
         { id: 2, label: "Execute the primary task" },
@@ -363,7 +401,7 @@ function getAgentResponse(agentName: string, _agentColor: string, userMsg: strin
   }
 
   const schedules: Record<string, string> = {
-    "Twitter Manager": "Runs daily, 9am–6pm",
+    "Twitter Manager": "Daily, 9am–6pm your timezone",
     "Reddit Scout": "Every 6 hours",
     "Lead Finder": "Weekly, 50 leads/batch",
     "Community Finder": "Runs weekly",
@@ -372,9 +410,8 @@ function getAgentResponse(agentName: string, _agentColor: string, userMsg: strin
   const confirmWords = ["yes", "go", "confirm", "start", "do it", "sounds good", "let's go", "approve", "ok", "sure", "proceed", "lgtm"];
   if (confirmWords.some(w => userMsg.toLowerCase().includes(w))) {
     const plan = AGENT_PLANS[agentName];
-    const tasks = plan ? plan.todos.map(t => t.label) : ["Executing task"];
     return {
-      text: `On it. I've started an **ongoing task** — I'll keep working on this on schedule. You can pause, resume, or stop me anytime from here or from **Mission Control**.\n\n**What I'm doing:**\n${tasks.map((t, i) => `${i + 1}. ${t}`).join("\n")}`,
+      text: "Mission launched. I'll keep running on schedule and report important activity right here in chat.\n\nYou can pause, resume, or stop me anytime from here or from **Mission Control**.",
       taskCards: [
         { agent: agentName, color: _agentColor, title: plan?.todos[0]?.label ?? "Running task", schedule: schedules[agentName] ?? "Continuous", status: "running" },
       ],
@@ -410,13 +447,27 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
   const [input, setInput] = useState(initialPrompt ?? "");
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
-  const [streamingExtras, setStreamingExtras] = useState<{ planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; browserSetup?: { platform: string }; questions?: AgentQuestion[] }>({});
+  const [streamingExtras, setStreamingExtras] = useState<{ planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; connectAccount?: { platform: string }; questions?: AgentQuestion[] }>({});
   const [selectedModel, setSelectedModel] = useState("deepseek-v3");
   const endRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const turnRef = useRef(0);
 
   const isAgentMode = !!agentName;
+  const greetingAdded = useRef(false);
+
+  useEffect(() => {
+    if (isAgentMode && agentInfo && !greetingAdded.current && messages.length === 0) {
+      greetingAdded.current = true;
+      const greeting = getAgentGreeting(agentInfo.name);
+      setMessages([{
+        id: "a-greeting",
+        role: "assistant",
+        content: greeting.text,
+        connectAccount: greeting.connectAccount,
+      }]);
+    }
+  }, [isAgentMode, agentInfo]);
 
   useEffect(() => {
     if (initialPrompt) {
@@ -457,7 +508,7 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
 
     setStreaming(true);
     setStreamingText("");
-    setStreamingExtras({ planItems: response.planItems, taskCards: response.taskCards, todoPlans: response.todoPlans, browserSetup: response.browserSetup, questions: response.questions });
+    setStreamingExtras({ planItems: response.planItems, taskCards: response.taskCards, todoPlans: response.todoPlans, connectAccount: response.connectAccount, questions: response.questions });
 
     let idx = 0;
     const fullText = response.text;
@@ -473,27 +524,95 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
           planItems: response.planItems,
           taskCards: response.taskCards,
           todoPlans: response.todoPlans,
-          browserSetup: response.browserSetup,
+          connectAccount: response.connectAccount,
           questions: response.questions,
         };
         setMessages(prev => [...prev, assistantMsg]);
         setStreaming(false);
         setStreamingText("");
         setStreamingExtras({});
+
+        if (response.taskCards && response.taskCards.length > 0 && isAgentMode) {
+          addMockActivities();
+        }
       }
     }, 12);
   }, [input, streaming, isAgentMode, agentInfo]);
 
+  const addMockActivities = useCallback(() => {
+    const mockActivities: { delay: number; msg: ChatMessage }[] = [
+      {
+        delay: 2000,
+        msg: {
+          id: `act-${Date.now()}-1`, role: "assistant",
+          content: "",
+          activities: [
+            {
+              tweetAuthor: "Sarah Chen", tweetHandle: "@sarahchen_dev",
+              tweetText: "Manual outbound is killing our team's productivity. We spend more time researching leads than actually talking to them. There has to be a better way.",
+              tweetUrl: "https://x.com/sarahchen_dev/status/1234567890",
+              actions: [
+                { type: "liked", status: "success" },
+                { type: "replied", replyText: "We felt this exact pain — spent 3 months building agents that do the research and draft personalized replies for you. Happy to show you a 5-min demo if interested.", status: "success" },
+              ],
+              timestamp: "just now",
+            },
+          ],
+        },
+      },
+      {
+        delay: 4500,
+        msg: {
+          id: `act-${Date.now()}-2`, role: "assistant", content: "",
+          activities: [
+            {
+              tweetAuthor: "Mike Rodriguez", tweetHandle: "@mikerodriguez_gtm",
+              tweetText: "Hot take: if you're still doing cold outreach manually in 2025, you're leaving money on the table. The founders who are winning are automating their top-of-funnel.",
+              tweetUrl: "https://x.com/mikerodriguez_gtm/status/1234567891",
+              actions: [
+                { type: "liked", status: "success" },
+                { type: "replied", replyText: "Agreed. We're seeing founders save 15+ hours/week by having AI agents handle signal detection and initial outreach. The human touch still matters — but for the right conversations, not all of them.", status: "success" },
+              ],
+              timestamp: "just now",
+            },
+          ],
+        },
+      },
+      {
+        delay: 7000,
+        msg: {
+          id: `act-${Date.now()}-3`, role: "assistant", content: "",
+          activities: [
+            {
+              tweetAuthor: "Jen Park", tweetHandle: "@jenpark_saas",
+              tweetText: "Just spent 6 hours prospecting on LinkedIn. Found 3 good leads. This is not scalable. Anyone using AI tools for lead gen? What's actually working?",
+              tweetUrl: "https://x.com/jenpark_saas/status/1234567892",
+              actions: [
+                { type: "liked", status: "success" },
+                { type: "replied", replyText: "The ratio you're describing (6hrs → 3 leads) is exactly why we built GetU. Our agents scan X, Reddit, and LinkedIn simultaneously — typical result is 50+ qualified leads/week with zero manual work.", status: "success" },
+              ],
+              timestamp: "just now",
+            },
+          ],
+        },
+      },
+    ];
+
+    mockActivities.forEach(({ delay, msg }) => {
+      setTimeout(() => {
+        setMessages(prev => [...prev, msg]);
+      }, delay);
+    });
+  }, []);
+
   const handleQuestionAnswers = useCallback((answers: Record<string, string[]>) => {
     const agentQs = agentName ? AGENT_QUESTIONS[agentName] : undefined;
     if (!agentQs) return;
-    const lines = agentQs.map(q => {
+    const labels = agentQs.map(q => {
       const sel = answers[q.id] ?? [];
-      const labels = sel.map(s => q.options.find(o => o.id === s)?.label ?? s).join(", ");
-      return `${q.prompt} ${labels}`;
-    });
-    const summary = lines.join("\n");
-    setTimeout(() => submit(summary), 300);
+      return sel.map(s => q.options.find(o => o.id === s)?.label ?? s).join(", ");
+    }).filter(Boolean);
+    setTimeout(() => submit(labels.join(" · ")), 300);
   }, [agentName, submit]);
 
   const firstName = userName
@@ -507,44 +626,7 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
 
   if (isEmpty) {
     if (isAgentMode && agentInfo) {
-      const initials = agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2);
-      return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg }}>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", animation: "fadeUp .35s ease" }}>
-            <div style={{ width: "100%", maxWidth: 640, margin: "0 auto" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, justifyContent: "center" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 40 * 0.28, background: `${agentInfo.color}18`, border: `1.5px solid ${agentInfo.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 600, color: agentInfo.color }}>{initials}</span>
-                </div>
-                <h2 style={{ fontSize: 28, fontWeight: 400, fontFamily: T.serif, color: T.text, letterSpacing: "-0.01em", lineHeight: 1.3, margin: 0 }}>
-                  {agentInfo.name}
-                </h2>
-              </div>
-              <p style={{ textAlign: "center", fontSize: 13, color: T.textMid, marginBottom: 6, lineHeight: 1.6 }}>
-                {agentInfo.tagline}
-              </p>
-              <p style={{ textAlign: "center", fontSize: 13, color: T.text, marginBottom: 20, lineHeight: 1.6, fontWeight: 500 }}>
-                Tell me about your product and target audience to get started.
-              </p>
-              <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder={`Tell ${agentInfo.name} what you need…`} />
-              {(() => {
-                const suggestions = AGENT_SUGGESTIONS[agentInfo.name];
-                if (!suggestions || suggestions.length === 0) return null;
-                return (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
-                    {suggestions.map((s, i) => (
-                      <button key={i} onClick={() => { setInput(s); textareaRef.current?.focus(); resizeTextarea(); }} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: T.textMid, textAlign: "left", lineHeight: 1.5, cursor: "pointer", transition: "border-color .15s, color .15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = agentInfo.color + "50"; e.currentTarget.style.color = T.text; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMid; }}
-                      >{s}</button>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      );
+      return <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg }} />;
     }
 
     return (
@@ -585,7 +667,7 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
       <div style={{ flex: 1, overflowY: "auto", padding: "24px 0" }}>
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", gap: 20 }}>
           {messages.map(msg => (
-            <MessageBubble key={msg.id} message={msg} agentInfo={agentInfo} onViewMissions={() => onNavigate("missions")} onSubmitAnswers={handleQuestionAnswers} />
+            <MessageBubble key={msg.id} message={msg} agentInfo={agentInfo} onViewMissions={() => onNavigate("missions")} onSubmitAnswers={handleQuestionAnswers} onApprove={() => submit("Approved")} />
           ))}
           {streaming && (
             <StreamingBubble text={streamingText} extras={streamingExtras} agentInfo={agentInfo} />
@@ -607,7 +689,7 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
 
 // ── Message Bubble ────────────────────────────────────────────────────────────
 
-function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers }: { message: ChatMessage; agentInfo?: AgentChatInfo; onViewMissions: () => void; onSubmitAnswers?: (answers: Record<string, string[]>) => void }) {
+function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, onApprove }: { message: ChatMessage; agentInfo?: AgentChatInfo; onViewMissions: () => void; onSubmitAnswers?: (answers: Record<string, string[]>) => void; onApprove?: () => void }) {
   const isUser = message.role === "user";
   const nameLabel = agentInfo ? agentInfo.name : "ARIA";
   const initials = agentInfo ? agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2) : "A";
@@ -620,20 +702,23 @@ function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers }: 
       {!isUser && avatarEl}
       <div style={{ maxWidth: "80%", display: "flex", flexDirection: "column", gap: 6, alignItems: isUser ? "flex-end" : "flex-start" }}>
         {!isUser && <span style={{ fontSize: 10, color: agentInfo ? agentInfo.color : T.green, fontFamily: T.mono, letterSpacing: .5 }}>{nameLabel}</span>}
-        <div style={{ background: isUser ? T.text : T.surface, color: isUser ? T.bg : T.text, border: isUser ? "none" : `1px solid ${T.border}`, borderRadius: isUser ? "12px 12px 4px 12px" : "4px 12px 12px 12px", padding: "10px 14px", fontSize: 14 }}>
-          {isUser ? <span style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{message.content}</span> : renderMarkdown(message.content)}
-        </div>
+        {(isUser || message.content) && (
+          <div style={{ background: isUser ? T.text : T.surface, color: isUser ? T.bg : T.text, border: isUser ? "none" : `1px solid ${T.border}`, borderRadius: isUser ? "12px 12px 4px 12px" : "4px 12px 12px 12px", padding: "10px 14px", fontSize: 14 }}>
+            {isUser ? <span style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{message.content}</span> : renderMarkdown(message.content)}
+          </div>
+        )}
         {message.questions && onSubmitAnswers && <QuestionCard questions={message.questions} agentColor={agentInfo?.color} onSubmitAnswers={onSubmitAnswers} />}
         {message.planItems && <PlanCard items={message.planItems} />}
-        {message.todoPlans && <TodoPlanCard items={message.todoPlans} agentColor={agentInfo?.color} />}
-        {message.browserSetup && <BrowserSetupCard platform={message.browserSetup.platform} />}
+        {message.todoPlans && <TodoPlanCard items={message.todoPlans} agentColor={agentInfo?.color} onApprove={onApprove} />}
+        {message.connectAccount && <ConnectAccountCard platform={message.connectAccount.platform} />}
         {message.taskCards?.map((tc, i) => <TaskCreatedCard key={i} task={tc} onViewMissions={onViewMissions} />)}
+        {message.activities?.map((act, i) => <TwitterActivityCard key={i} activity={act} agentColor={agentInfo?.color} />)}
       </div>
     </div>
   );
 }
 
-function StreamingBubble({ text, extras, agentInfo }: { text: string; extras: { planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; browserSetup?: { platform: string }; questions?: AgentQuestion[] }; agentInfo?: AgentChatInfo }) {
+function StreamingBubble({ text, extras, agentInfo }: { text: string; extras: { planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; connectAccount?: { platform: string }; questions?: AgentQuestion[] }; agentInfo?: AgentChatInfo }) {
   const nameLabel = agentInfo ? agentInfo.name : "ARIA";
   const initials = agentInfo ? agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2) : "A";
   const avatarEl = agentInfo
@@ -650,7 +735,7 @@ function StreamingBubble({ text, extras, agentInfo }: { text: string; extras: { 
           <span style={{ display: "inline-block", width: 2, height: 14, background: T.textDim, marginLeft: 2, verticalAlign: "middle", animation: "blink 1s infinite" }} />
         </div>
         {extras.todoPlans && <TodoPlanCard items={extras.todoPlans} agentColor={agentInfo?.color} />}
-        {extras.browserSetup && <BrowserSetupCard platform={extras.browserSetup.platform} />}
+        {extras.connectAccount && <ConnectAccountCard platform={extras.connectAccount.platform} />}
       </div>
     </div>
   );
@@ -685,8 +770,17 @@ function PlanCard({ items }: { items: PlanItem[] }) {
 
 // ── Todo Plan Card (Cursor/Claude style checklist) ───────────────────────────
 
-function TodoPlanCard({ items, agentColor }: { items: TodoPlan[]; agentColor?: string }) {
+function TodoPlanCard({ items, agentColor, onApprove }: { items: TodoPlan[]; agentColor?: string; onApprove?: () => void }) {
   const color = agentColor ?? T.green;
+  const [approved, setApproved] = useState(false);
+  const [approveHov, setApproveHov] = useState(false);
+
+  function handleApprove() {
+    if (approved) return;
+    setApproved(true);
+    onApprove?.();
+  }
+
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "14px 16px", width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
@@ -704,9 +798,32 @@ function TodoPlanCard({ items, agentColor }: { items: TodoPlan[]; agentColor?: s
           </div>
         </div>
       ))}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}` }}>
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke={T.textDim} strokeWidth="1.5" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>
-        <span style={{ fontSize: 11, color: T.textMid, fontStyle: "italic" }}>Reply "go" to start, or tell me what to change.</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
+        {onApprove && !approved && (
+          <button
+            onClick={handleApprove}
+            onMouseEnter={() => setApproveHov(true)}
+            onMouseLeave={() => setApproveHov(false)}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "6px 16px", borderRadius: 7,
+              background: approveHov ? T.text : T.text,
+              opacity: approveHov ? 1 : 0.9,
+              color: T.bg, border: "none", fontSize: 12, fontWeight: 600,
+              cursor: "pointer", transition: "opacity .15s",
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5 6.5-7" /></svg>
+            Approve
+          </button>
+        )}
+        {approved && (
+          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontFamily: T.mono, color: T.green }}>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke={T.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5 6.5-7" /></svg>
+            Approved
+          </span>
+        )}
+        {!approved && <span style={{ fontSize: 11, color: T.textDim, fontStyle: "italic" }}>or tell me what to change</span>}
       </div>
     </div>
   );
@@ -1218,35 +1335,110 @@ function QuestionCard({ questions, agentColor, onSubmitAnswers }: { questions: A
   );
 }
 
-function BrowserSetupCard({ platform }: { platform: string }) {
-  const [installHov, setInstallHov] = useState(false);
+function TwitterActivityCard({ activity, agentColor }: { activity: TwitterActivity; agentColor?: string }) {
+  const color = agentColor ?? "#D97706";
+  const ACTION_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+    liked:    { icon: <span style={{ fontSize: 12 }}>❤️</span>, label: "LIKED",    color: "#E11D48" },
+    replied:  { icon: <span style={{ fontSize: 11 }}>↩️</span>, label: "REPLIED",  color: "#0891B2" },
+    reposted: { icon: <span style={{ fontSize: 11 }}>🔁</span>, label: "REPOSTED", color: "#16A34A" },
+    followed: { icon: <span style={{ fontSize: 11 }}>➕</span>, label: "FOLLOWED", color: "#7C3AED" },
+  };
+
   return (
-    <div style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 10, padding: "12px 14px", width: "100%", display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(217,119,6,0.12)", border: "1px solid rgba(245,158,11,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{
+      background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
+      padding: "14px 16px", width: "100%", display: "flex", flexDirection: "column", gap: 10,
+      animation: "fadeUp .3s ease",
+    }}>
+      {/* Original tweet */}
+      <div style={{ fontSize: 13, color: T.text, lineHeight: 1.65 }}>
+        {activity.tweetText}
+      </div>
+      {activity.tweetUrl && (
+        <a href={activity.tweetUrl} target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: 11, color, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, marginTop: -4 }}
+          onMouseEnter={e => { e.currentTarget.style.textDecoration = "underline"; }}
+          onMouseLeave={e => { e.currentTarget.style.textDecoration = "none"; }}
+        >
+          View original post ↗
+        </a>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 6, borderTop: `1px solid ${T.border}` }}>
+        {activity.actions.map((action, i) => {
+          const cfg = ACTION_CONFIG[action.type] ?? ACTION_CONFIG.liked;
+          const statusColor = action.status === "success" ? "#16A34A" : "#D97706";
+          const statusLabel = action.status === "success" ? "success" : "pending";
+
+          return (
+            <div key={i}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  {cfg.icon}
+                  <span style={{ fontSize: 11, fontFamily: T.mono, fontWeight: 600, color: cfg.color, letterSpacing: "0.03em" }}>{cfg.label}</span>
+                </span>
+                <span style={{
+                  fontSize: 9, fontFamily: T.mono, fontWeight: 600,
+                  color: statusColor, background: `${statusColor}12`,
+                  padding: "1px 6px", borderRadius: 4, border: `1px solid ${statusColor}25`,
+                  letterSpacing: "0.03em",
+                }}>{statusLabel}</span>
+              </div>
+              {action.type === "replied" && action.replyText && (
+                <div style={{
+                  marginTop: 6, marginLeft: 24,
+                  padding: "8px 12px", borderLeft: `2.5px solid ${color}40`,
+                  background: `${color}06`, borderRadius: "0 6px 6px 0",
+                  fontSize: 12, color: T.textMid, lineHeight: 1.6, fontStyle: "italic",
+                }}>
+                  {action.replyText}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer: author + timestamp */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
+        <span style={{ fontSize: 11, color: T.textDim }}>
+          <span style={{ fontWeight: 500, color: T.textMid }}>{activity.tweetAuthor}</span>{" "}
+          <span style={{ fontFamily: T.mono }}>{activity.tweetHandle}</span>
+        </span>
+        <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{activity.timestamp}</span>
+      </div>
+    </div>
+  );
+}
+
+function ConnectAccountCard({ platform }: { platform: string }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div style={{ background: "rgba(29,155,240,0.06)", border: "1px solid rgba(29,155,240,0.15)", borderRadius: 10, padding: "12px 14px", width: "100%", display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(29,155,240,0.10)", border: "1px solid rgba(29,155,240,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="1" y="2" width="14" height="11" rx="2" stroke="#D97706" strokeWidth="1.3" />
-          <path d="M1 5h14" stroke="#D97706" strokeWidth="1.3" />
-          <circle cx="3.5" cy="3.5" r="0.6" fill="#D97706" />
-          <circle cx="5.5" cy="3.5" r="0.6" fill="#D97706" />
+          <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM7 11V7.5a1 1 0 012 0V11a1 1 0 01-2 0zm1-6.25a.75.75 0 110-1.5.75.75 0 010 1.5z" fill="#1D9BF0" />
+          <path d="M5 6.5l1.5 1.5L10 5" stroke="#1D9BF0" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#D97706" }}>Browser extension needed for {platform}</div>
-        <div style={{ fontSize: 11, color: T.textMid, marginTop: 2 }}>Install it to let me interact with the platform on your behalf.</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#1D9BF0" }}>Connect your {platform} account</div>
+        <div style={{ fontSize: 11, color: T.textMid, marginTop: 2 }}>Link your account so I can interact with {platform} on your behalf.</div>
       </div>
       <button
-        onClick={() => {/* TODO: open extension install page */}}
-        onMouseEnter={() => setInstallHov(true)}
-        onMouseLeave={() => setInstallHov(false)}
+        onClick={() => {/* TODO: open connect account flow */}}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         style={{
           display: "flex", alignItems: "center", gap: 5,
           padding: "6px 14px", borderRadius: 7, flexShrink: 0,
-          background: installHov ? "#B45309" : "#D97706",
+          background: hov ? "#1A8CD8" : "#1D9BF0",
           color: "#fff", border: "none", fontSize: 11, fontWeight: 600,
           cursor: "pointer", transition: "background .15s", whiteSpace: "nowrap",
         }}
       >
-        Install
+        Connect
       </button>
     </div>
   );
