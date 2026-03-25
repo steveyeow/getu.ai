@@ -42,6 +42,14 @@ interface LeadActivity {
   outreachDraft?: string;
 }
 
+interface GeoAuditItem {
+  category:    string;
+  label:       string;
+  status:      "pass" | "fail" | "warn";
+  detail:      string;
+  score?:      number;
+}
+
 interface ChatMessage {
   id:     string;
   role:   "user" | "assistant";
@@ -53,6 +61,7 @@ interface ChatMessage {
   questions?: AgentQuestion[];
   activities?: TwitterActivity[];
   leads?: LeadActivity[];
+  geoAudits?: GeoAuditItem[];
 }
 
 interface PlanItem {
@@ -554,7 +563,22 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
     const agent = agentInfo?.name ?? "";
     let mockMessages: { delay: number; msg: ChatMessage }[] = [];
 
-    if (agent === "Lead Finder") {
+    if (agent === "GEO Optimizer") {
+      mockMessages = [
+        { delay: 1500, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", geoAudits: [
+          { category: "AI Bot Access", label: "robots.txt", status: "pass", detail: "GPTBot, ClaudeBot, PerplexityBot all allowed" },
+          { category: "AI Bot Access", label: "Crawl rate", status: "warn", detail: "No crawl-delay set — bots may hit your server hard" },
+        ]}},
+        { delay: 4000, msg: { id: `act-${Date.now()}-2`, role: "assistant", content: "", geoAudits: [
+          { category: "Machine Readability", label: "llms.txt", status: "fail", detail: "No /.well-known/llms.txt found — AI models can't self-describe your product" },
+          { category: "Machine Readability", label: "Schema.org", status: "pass", detail: "Organization + Product JSON-LD detected" },
+          { category: "Machine Readability", label: "Open Graph", status: "pass", detail: "og:title, og:description, og:image all present" },
+        ]}},
+        { delay: 6500, msg: { id: `act-${Date.now()}-3`, role: "assistant", content: "**GEO Score: 72/100** — Good foundation, 2 critical fixes needed.\n\nTop priorities:\n1. Add `llms.txt` — takes 5 minutes, biggest impact\n2. Set `crawl-delay` in robots.txt to protect server\n\nWant me to generate the `llms.txt` file for you?", geoAudits: [
+          { category: "Overall", label: "GEO Score", status: "warn", detail: "72/100 — above average, but missing key AI discovery signals", score: 72 },
+        ]}},
+      ];
+    } else if (agent === "Lead Finder") {
       mockMessages = [
         { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", leads: [
           { name: "Sarah Chen", title: "VP of Marketing", company: "Ramp (Series B · 120 employees)", profileUrl: "https://linkedin.com/in/sarahchen", icpScore: 94, signals: ["Posted about scaling outbound last week", "Hiring 2 SDRs — likely needs automation"] },
@@ -694,6 +718,7 @@ function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, on
         {message.taskCards?.map((tc, i) => <TaskCreatedCard key={i} task={tc} onViewMissions={onViewMissions} />)}
         {message.activities?.map((act, i) => <TwitterActivityCard key={i} activity={act} agentColor={agentInfo?.color} />)}
         {message.leads?.map((lead, i) => <LeadActivityCard key={i} lead={lead} agentColor={agentInfo?.color} />)}
+        {message.geoAudits && <GeoAuditCard items={message.geoAudits} />}
       </div>
     </div>
   );
@@ -1453,6 +1478,66 @@ function LeadActivityCard({ lead, agentColor }: { lead: LeadActivity; agentColor
           <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6, fontStyle: "italic" }}>{lead.outreachDraft}</div>
         </div>
       )}
+    </div>
+  );
+}
+
+function GeoAuditCard({ items }: { items: GeoAuditItem[] }) {
+  const STATUS_CFG: Record<string, { icon: string; color: string; label: string }> = {
+    pass: { icon: "✓", color: "#16A34A", label: "PASS" },
+    fail: { icon: "✗", color: "#DC2626", label: "FAIL" },
+    warn: { icon: "!", color: "#D97706", label: "WARN" },
+  };
+
+  const hasScore = items.some(i => i.score !== undefined);
+  const scoreItem = items.find(i => i.score !== undefined);
+
+  return (
+    <div style={{
+      background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
+      padding: "14px 16px", width: "100%", display: "flex", flexDirection: "column", gap: 0,
+      animation: "fadeUp .3s ease",
+    }}>
+      {/* Score bar if present */}
+      {hasScore && scoreItem && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 24, fontWeight: 700, fontFamily: T.mono, color: STATUS_CFG[scoreItem.status].color, lineHeight: 1 }}>{scoreItem.score}</span>
+              <span style={{ fontSize: 12, color: T.textDim, fontFamily: T.mono }}>/100</span>
+            </div>
+            <div style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 2 }}>{scoreItem.category}</div>
+          </div>
+          <div style={{ flex: 1, height: 6, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ width: `${scoreItem.score}%`, height: "100%", background: STATUS_CFG[scoreItem.status].color, borderRadius: 3, transition: "width .5s ease" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Audit items */}
+      {items.filter(i => i.score === undefined).map((item, i) => {
+        const cfg = STATUS_CFG[item.status] ?? STATUS_CFG.warn;
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none" }}>
+            <span style={{
+              width: 20, height: 20, borderRadius: 5,
+              background: `${cfg.color}12`, border: `1px solid ${cfg.color}25`,
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              fontSize: 11, fontWeight: 700, color: cfg.color, fontFamily: T.mono, marginTop: 1,
+            }}>{cfg.icon}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{item.label}</span>
+                <span style={{ fontSize: 9, fontFamily: T.mono, fontWeight: 600, color: cfg.color, background: `${cfg.color}10`, padding: "1px 5px", borderRadius: 3, border: `1px solid ${cfg.color}20`, letterSpacing: "0.03em" }}>{cfg.label}</span>
+              </div>
+              <div style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, marginTop: 2 }}>{item.detail}</div>
+              {item.category !== "Overall" && (
+                <div style={{ fontSize: 9, fontFamily: T.mono, color: T.textDim, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{item.category}</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
