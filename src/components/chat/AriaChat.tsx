@@ -32,6 +32,16 @@ interface TwitterActivity {
   timestamp:    string;
 }
 
+interface LeadActivity {
+  name:          string;
+  title:         string;
+  company:       string;
+  profileUrl?:   string;
+  icpScore:      number;
+  signals:       string[];
+  outreachDraft?: string;
+}
+
 interface ChatMessage {
   id:     string;
   role:   "user" | "assistant";
@@ -42,6 +52,7 @@ interface ChatMessage {
   connectAccount?: { platform: string };
   questions?: AgentQuestion[];
   activities?: TwitterActivity[];
+  leads?: LeadActivity[];
 }
 
 interface PlanItem {
@@ -540,70 +551,39 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
   }, [input, streaming, isAgentMode, agentInfo]);
 
   const addMockActivities = useCallback(() => {
-    const mockActivities: { delay: number; msg: ChatMessage }[] = [
-      {
-        delay: 2000,
-        msg: {
-          id: `act-${Date.now()}-1`, role: "assistant",
-          content: "",
-          activities: [
-            {
-              tweetAuthor: "Sarah Chen", tweetHandle: "@sarahchen_dev",
-              tweetText: "Manual outbound is killing our team's productivity. We spend more time researching leads than actually talking to them. There has to be a better way.",
-              tweetUrl: "https://x.com/sarahchen_dev/status/1234567890",
-              actions: [
-                { type: "liked", status: "success" },
-                { type: "replied", replyText: "We felt this exact pain — spent 3 months building agents that do the research and draft personalized replies for you. Happy to show you a 5-min demo if interested.", status: "success" },
-              ],
-              timestamp: "just now",
-            },
-          ],
-        },
-      },
-      {
-        delay: 4500,
-        msg: {
-          id: `act-${Date.now()}-2`, role: "assistant", content: "",
-          activities: [
-            {
-              tweetAuthor: "Mike Rodriguez", tweetHandle: "@mikerodriguez_gtm",
-              tweetText: "Hot take: if you're still doing cold outreach manually in 2025, you're leaving money on the table. The founders who are winning are automating their top-of-funnel.",
-              tweetUrl: "https://x.com/mikerodriguez_gtm/status/1234567891",
-              actions: [
-                { type: "liked", status: "success" },
-                { type: "replied", replyText: "Agreed. We're seeing founders save 15+ hours/week by having AI agents handle signal detection and initial outreach. The human touch still matters — but for the right conversations, not all of them.", status: "success" },
-              ],
-              timestamp: "just now",
-            },
-          ],
-        },
-      },
-      {
-        delay: 7000,
-        msg: {
-          id: `act-${Date.now()}-3`, role: "assistant", content: "",
-          activities: [
-            {
-              tweetAuthor: "Jen Park", tweetHandle: "@jenpark_saas",
-              tweetText: "Just spent 6 hours prospecting on LinkedIn. Found 3 good leads. This is not scalable. Anyone using AI tools for lead gen? What's actually working?",
-              tweetUrl: "https://x.com/jenpark_saas/status/1234567892",
-              actions: [
-                { type: "liked", status: "success" },
-                { type: "replied", replyText: "The ratio you're describing (6hrs → 3 leads) is exactly why we built GetU. Our agents scan X, Reddit, and LinkedIn simultaneously — typical result is 50+ qualified leads/week with zero manual work.", status: "success" },
-              ],
-              timestamp: "just now",
-            },
-          ],
-        },
-      },
-    ];
+    const agent = agentInfo?.name ?? "";
+    let mockMessages: { delay: number; msg: ChatMessage }[] = [];
 
-    mockActivities.forEach(({ delay, msg }) => {
-      setTimeout(() => {
-        setMessages(prev => [...prev, msg]);
-      }, delay);
+    if (agent === "Lead Finder") {
+      mockMessages = [
+        { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", leads: [
+          { name: "Sarah Chen", title: "VP of Marketing", company: "Ramp (Series B · 120 employees)", profileUrl: "https://linkedin.com/in/sarahchen", icpScore: 94, signals: ["Posted about scaling outbound last week", "Hiring 2 SDRs — likely needs automation"] },
+        ]}},
+        { delay: 4500, msg: { id: `act-${Date.now()}-2`, role: "assistant", content: "", leads: [
+          { name: "Mike Rodriguez", title: "Head of Growth", company: "Lattice (Series C · 85 employees)", profileUrl: "https://linkedin.com/in/mikerodriguez", icpScore: 91, signals: ["Tweeted about GTM inefficiency", "Company raised $30M last quarter"], outreachDraft: "Hey Mike — saw your tweet about GTM being broken at scale. We built agents that handle signal detection and initial outreach so your team focuses on closing. Worth a 10-min look?" },
+        ]}},
+        { delay: 7000, msg: { id: `act-${Date.now()}-3`, role: "assistant", content: "", leads: [
+          { name: "Jen Park", title: "Marketing Lead", company: "Vercel (Series D · 300 employees)", profileUrl: "https://linkedin.com/in/jenpark", icpScore: 87, signals: ["Active in SaaS Growth community on Discord", "Commented on competitor's LinkedIn post"] },
+        ]}},
+      ];
+    } else {
+      mockMessages = [
+        { delay: 2000, msg: { id: `act-${Date.now()}-1`, role: "assistant", content: "", activities: [
+          { tweetAuthor: "Sarah Chen", tweetHandle: "@sarahchen_dev", tweetText: "Manual outbound is killing our team's productivity. We spend more time researching leads than actually talking to them. There has to be a better way.", tweetUrl: "https://x.com/sarahchen_dev/status/1234567890", actions: [{ type: "liked", status: "success" }, { type: "replied", replyText: "We felt this exact pain — spent 3 months building agents that do the research and draft personalized replies for you. Happy to show you a 5-min demo if interested.", status: "success" }], timestamp: "just now" },
+        ]}},
+        { delay: 4500, msg: { id: `act-${Date.now()}-2`, role: "assistant", content: "", activities: [
+          { tweetAuthor: "Mike Rodriguez", tweetHandle: "@mikerodriguez_gtm", tweetText: "Hot take: if you're still doing cold outreach manually in 2025, you're leaving money on the table. The founders who are winning are automating their top-of-funnel.", tweetUrl: "https://x.com/mikerodriguez_gtm/status/1234567891", actions: [{ type: "liked", status: "success" }, { type: "replied", replyText: "Agreed. We're seeing founders save 15+ hours/week by having AI agents handle signal detection and initial outreach. The human touch still matters — but for the right conversations, not all of them.", status: "success" }], timestamp: "just now" },
+        ]}},
+        { delay: 7000, msg: { id: `act-${Date.now()}-3`, role: "assistant", content: "", activities: [
+          { tweetAuthor: "Jen Park", tweetHandle: "@jenpark_saas", tweetText: "Just spent 6 hours prospecting on LinkedIn. Found 3 good leads. This is not scalable. Anyone using AI tools for lead gen? What's actually working?", tweetUrl: "https://x.com/jenpark_saas/status/1234567892", actions: [{ type: "liked", status: "success" }, { type: "replied", replyText: "The ratio you're describing (6hrs → 3 leads) is exactly why we built GetU. Our agents scan X, Reddit, and LinkedIn simultaneously — typical result is 50+ qualified leads/week with zero manual work.", status: "success" }], timestamp: "just now" },
+        ]}},
+      ];
+    }
+
+    mockMessages.forEach(({ delay, msg }) => {
+      setTimeout(() => { setMessages(prev => [...prev, msg]); }, delay);
     });
-  }, []);
+  }, [agentInfo]);
 
   const handleQuestionAnswers = useCallback((answers: Record<string, string[]>) => {
     const agentQs = agentName ? AGENT_QUESTIONS[agentName] : undefined;
@@ -713,6 +693,7 @@ function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, on
         {message.connectAccount && <ConnectAccountCard platform={message.connectAccount.platform} />}
         {message.taskCards?.map((tc, i) => <TaskCreatedCard key={i} task={tc} onViewMissions={onViewMissions} />)}
         {message.activities?.map((act, i) => <TwitterActivityCard key={i} activity={act} agentColor={agentInfo?.color} />)}
+        {message.leads?.map((lead, i) => <LeadActivityCard key={i} lead={lead} agentColor={agentInfo?.color} />)}
       </div>
     </div>
   );
@@ -1408,6 +1389,70 @@ function TwitterActivityCard({ activity, agentColor }: { activity: TwitterActivi
         </span>
         <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{activity.timestamp}</span>
       </div>
+    </div>
+  );
+}
+
+function LeadActivityCard({ lead, agentColor }: { lead: LeadActivity; agentColor?: string }) {
+  const color = agentColor ?? "#0A66C2";
+  const scoreColor = lead.icpScore >= 90 ? "#16A34A" : lead.icpScore >= 75 ? "#D97706" : T.textDim;
+  const initials = lead.name.split(" ").map(w => w[0]).join("").slice(0, 2);
+
+  return (
+    <div style={{
+      background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
+      padding: "14px 16px", width: "100%", display: "flex", flexDirection: "column", gap: 10,
+      animation: "fadeUp .3s ease",
+    }}>
+      {/* Header: avatar + name + score */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: "50%",
+          background: `${color}14`, border: `1.5px solid ${color}30`,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <span style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 600, color }}>{initials}</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{lead.name}</span>
+            {lead.profileUrl && (
+              <a href={lead.profileUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", flexShrink: 0 }} title="View LinkedIn profile">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="#0A66C2"><path d="M13.6 1H2.4C1.6 1 1 1.6 1 2.4v11.2c0 .8.6 1.4 1.4 1.4h11.2c.8 0 1.4-.6 1.4-1.4V2.4c0-.8-.6-1.4-1.4-1.4zM5.3 13H3.1V6.3h2.2V13zM4.2 5.4c-.7 0-1.3-.6-1.3-1.3 0-.7.6-1.3 1.3-1.3.7 0 1.3.6 1.3 1.3 0 .7-.6 1.3-1.3 1.3zM13 13h-2.2V9.7c0-.8 0-1.8-1.1-1.8s-1.3.9-1.3 1.7V13H6.2V6.3h2.1v.9c.3-.6 1-1.1 2.1-1.1 2.2 0 2.6 1.5 2.6 3.4V13z"/></svg>
+              </a>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: T.textMid, marginTop: 1 }}>{lead.title} · {lead.company}</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, fontFamily: T.mono, color: scoreColor, lineHeight: 1 }}>{lead.icpScore}</span>
+          <span style={{ fontSize: 8, fontFamily: T.mono, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>ICP</span>
+        </div>
+      </div>
+
+      {/* Signals */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {lead.signals.map((signal, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: T.textMid, lineHeight: 1.5 }}>
+            <span style={{ color: "#D97706", flexShrink: 0, marginTop: 1 }}>⚡</span>
+            <span>{signal}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Outreach draft */}
+      {lead.outreachDraft && (
+        <div style={{
+          padding: "8px 12px", borderLeft: `2.5px solid ${color}40`,
+          background: `${color}06`, borderRadius: "0 6px 6px 0",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+            <span style={{ fontSize: 9, fontFamily: T.mono, fontWeight: 600, color, textTransform: "uppercase", letterSpacing: "0.04em" }}>Draft outreach</span>
+            <span style={{ fontSize: 9, fontFamily: T.mono, fontWeight: 600, color: "#D97706", background: "rgba(217,119,6,0.10)", padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(217,119,6,0.20)" }}>pending</span>
+          </div>
+          <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6, fontStyle: "italic" }}>{lead.outreachDraft}</div>
+        </div>
+      )}
     </div>
   );
 }
