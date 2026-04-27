@@ -17,7 +17,7 @@ interface DemoStep {
   status?: string;
 }
 
-type AgentName = "ARIA" | "getu.ai" | "Twitter Manager" | "Reddit Scout" | "Lead Finder" | "Community Finder" | "Content Studio";
+type AgentName = "getu.ai" | "Twitter Manager" | "Reddit Scout" | "Lead Finder" | "Community Finder" | "Content Studio";
 
 interface DemoStepExt extends DemoStep {
   agent?: AgentName;
@@ -512,8 +512,7 @@ function DemoTerminal() {
 // ── Agent color map ───────────────────────────────────────────────────────────
 
 const AGENT_COLORS: Record<AgentName, { color: string; bg: string; border: string }> = {
-  "ARIA":             { color: T.green,    bg: T.greenLight, border: T.greenMid },
-  "getu.ai":          { color: T.text,     bg: T.sidebarHov, border: T.borderMid },
+  "getu.ai":          { color: T.green,    bg: T.greenLight, border: T.greenMid },
   "Twitter Manager":  { color: "#D97706",  bg: "rgba(217,119,6,0.08)",  border: "rgba(217,119,6,0.25)"  },
   "Reddit Scout":     { color: "#FF4500",  bg: "rgba(255,69,0,0.08)",   border: "rgba(255,69,0,0.25)"   },
   "Lead Finder":      { color: "#0A66C2",  bg: "rgba(10,102,194,0.08)", border: "rgba(10,102,194,0.25)" },
@@ -524,7 +523,7 @@ const AGENT_COLORS: Record<AgentName, { color: string; bg: string; border: strin
 // ── Bubble Components ─────────────────────────────────────────────────────────
 
 function AgentBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean; onDone: () => void }) {
-  const agentName = line.agent ?? "ARIA";
+  const agentName = line.agent ?? "getu.ai";
   const ac = AGENT_COLORS[agentName];
   return (
     <>
@@ -634,7 +633,7 @@ function PlanBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean;
 }
 
 function ExecBubble({ line, isLive, onDone }: { line: LineData; isLive: boolean; onDone: () => void }) {
-  const ac = line.agent ? AGENT_COLORS[line.agent] : AGENT_COLORS.ARIA;
+  const ac = line.agent ? AGENT_COLORS[line.agent] : AGENT_COLORS["getu.ai"];
   return (
     <div style={{
       border: `1px solid ${ac.border}`,

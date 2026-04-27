@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { T } from "../../lib/theme.js";
+import { T, useTheme } from "../../lib/theme.js";
 
 interface TeamAgent {
   name: string;
@@ -12,7 +12,7 @@ interface TeamAgent {
 
 const MY_TEAM: TeamAgent[] = [
   {
-    name:         "ARIA",
+    name:         "getu.ai",
     color:        "#a78bfa",
     activity:     "Coordinating your GTM strategy & managing all agents",
     platform:     "All platforms",
@@ -63,7 +63,7 @@ const MY_TEAM: TeamAgent[] = [
 
 export const AGENTS = [
   {
-    name:       "ARIA",
+    name:       "getu.ai",
     tagline:    "Your strategic GTM advisor — discusses strategy, coordinates agents, and keeps everything aligned",
     color:      "#a78bfa",
     status:     "active" as const,
@@ -185,7 +185,7 @@ export default function AgentsPage({ onNavigate, onChatWithAgent }: Props) {
       <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h2 style={{ fontSize: 18, fontWeight: 600, color: T.text, fontFamily: T.mono }}>Agents</h2>
-          <p style={{ fontSize: 12, color: T.textDim, marginTop: 4 }}>Your AI GTM team — working around the clock across every channel.</p>
+          <p style={{ fontSize: 12, color: T.textDim, marginTop: 4 }}>Your AI GTM team — Agents working around the clock across every channel.</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -233,7 +233,7 @@ export default function AgentsPage({ onNavigate, onChatWithAgent }: Props) {
           const available = AGENTS.filter(a => !teamNames.has(a.name));
           return (
             <>
-              <SectionHeader label="Available to Hire" count={available.length} color={T.textDim} />
+              <SectionHeader label="Available Agents" count={available.length} color={T.textDim} />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
                 {available.map(agent => <HireCard key={agent.name} agent={agent} onChat={onChatWithAgent} />)}
               </div>
@@ -334,6 +334,9 @@ function HireCard({ agent, onChat }: { agent: AgentInfo; onChat: (a: AgentInfo) 
   const [hov, setHov] = useState(false);
   const isSoon = agent.status === "soon";
   const initials = agent.name.split(" ").map(w => w[0]).join("").slice(0, 2);
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
+  const capsBg = isDark ? `${agent.color}30` : `${agent.color}1a`;
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{
       background: T.surface, border: `1px solid ${hov ? agent.color + "40" : T.border}`,
@@ -352,7 +355,7 @@ function HireCard({ agent, onChat }: { agent: AgentInfo; onChat: (a: AgentInfo) 
       </div>
       <p style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6, margin: 0, flex: 1 }}>{agent.tagline}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-        {agent.caps.slice(0, 3).map(c => <span key={c} style={{ fontSize: 10, color: agent.color, background: `${agent.color}1a`, borderRadius: 5, padding: "3px 8px", fontFamily: T.mono }}>{c}</span>)}
+        {agent.caps.slice(0, 3).map(c => <span key={c} style={{ fontSize: 10, color: agent.color, background: capsBg, borderRadius: 5, padding: "3px 8px", fontFamily: T.mono }}>{c}</span>)}
       </div>
       <button onClick={() => !isSoon && onChat(agent)} style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -362,7 +365,7 @@ function HireCard({ agent, onChat }: { agent: AgentInfo; onChat: (a: AgentInfo) 
         borderRadius: 8, fontSize: 12, fontWeight: 500, fontFamily: T.mono,
         cursor: isSoon ? "default" : "pointer", transition: "background .15s, color .15s, border-color .15s",
       }}>
-        {isSoon ? "Coming Soon" : "Hire this Agent"}
+        {isSoon ? "Coming Soon" : "Activate Agent"}
       </button>
     </div>
   );

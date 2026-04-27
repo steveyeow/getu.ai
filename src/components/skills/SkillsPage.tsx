@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T } from "../../lib/theme.js";
+import { T, useTheme } from "../../lib/theme.js";
 
 const AGENT_COLOR: Record<string, string> = {
   "Twitter Manager":  "#D97706",
@@ -11,7 +11,7 @@ const AGENT_COLOR: Record<string, string> = {
   "GEO Optimizer":    "#0891B2",
   "SEO Writer":       "#7C3AED",
   "Ad Manager":       "#DC2626",
-  "ARIA":             "#a78bfa",
+  "getu.ai":             "#a78bfa",
 };
 
 
@@ -165,13 +165,13 @@ const SKILLS: Skill[] = [
     example:     "Plan a $5k LinkedIn Ads campaign targeting VP Marketing at SaaS companies.",
   },
 
-  // ── ARIA (Chief of Staff) ────────────────────────────────────────────────────
+  // ── getu.ai (general agent / Chief of Staff) ──────────────────────────────
   {
     id:          "gtm_strategy",
     name:        "GTM strategy session",
-    agent:       "ARIA",
+    agent:       "getu.ai",
     phase:       1,
-    description: "Your Chief of Staff for all things GTM. Discuss strategy, get recommendations on which channels to prioritize, review agent performance, and plan campaigns.",
+    description: "Your Chief of Staff for all things GTM. Discuss strategy, get recommendations on which channels to prioritize, review Agent performance, and plan campaigns.",
     inputs:      ["Your product / market context", "Current challenges", "Goals"],
     outputs:     ["Strategy recommendations", "Channel prioritization", "Agent task assignments"],
     example:     "Let's review our GTM strategy — which channels should we double down on?",
@@ -199,7 +199,7 @@ export default function SkillsPage({ onChat }: { onChat: (prompt?: string) => vo
           <div>
             <h1 style={{ fontSize: 18, fontWeight: 600, color: T.text, marginBottom: 6 }}>Skills</h1>
             <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
-              Each skill is a capability your agents can execute. Tell ARIA what you need — it picks the right agent and skill automatically.
+              Each Skill is a capability your Agents can execute. Tell getu.ai what you need — it picks the right Agent and Skill automatically.
             </p>
           </div>
           <button
@@ -221,14 +221,14 @@ export default function SkillsPage({ onChat }: { onChat: (prompt?: string) => vo
           </>
         )}
 
-        <SectionLabel label="Available now" dot={T.green} />
+        <SectionLabel label="Available Skills" dot={T.green} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
           {phase1.map(skill => (
             <SkillCard key={skill.id} skill={skill} expanded={expanded === skill.id} onToggle={() => setExpanded(expanded === skill.id ? null : skill.id)} onChat={() => onChat(skill.example)} />
           ))}
         </div>
 
-        <SectionLabel label="Coming soon" dot={T.textDim} />
+        <SectionLabel label="Coming Soon" dot={T.textDim} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: 0.6 }}>
           {phase2.map(skill => (
             <SkillCard key={skill.id} skill={skill} expanded={expanded === skill.id} onToggle={() => setExpanded(expanded === skill.id ? null : skill.id)} onChat={onChat} soon />
@@ -252,11 +252,18 @@ function SectionLabel({ label, dot }: { label: string; dot: string }) {
 
 function SkillCard({ skill, expanded, onToggle, onChat, soon, custom }: { skill: Skill; expanded: boolean; onToggle: () => void; onChat: () => void; soon?: boolean; custom?: boolean }) {
   const color = custom ? "#8B5CF6" : (AGENT_COLOR[skill.agent] ?? T.textMid);
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
+  // Mode-aware tints: dark mode needs ~2× the saturation for equivalent perceived contrast
+  const avatarBg     = isDark ? `${color}28` : `${color}12`;
+  const avatarBorder = isDark ? `${color}48` : `${color}25`;
+  const badgeBg      = isDark ? `${color}24` : `${color}10`;
+  const customBadgeBg = isDark ? "#8B5CF624" : "#8B5CF610";
 
   return (
     <div style={{ background: T.surface, border: `1px solid ${custom ? "#8B5CF620" : T.border}`, borderRadius: 10, overflow: "hidden" }}>
       <div onClick={soon ? undefined : onToggle} style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", cursor: soon ? "default" : "pointer" }}>
-        <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 9, background: `${color}12`, border: `1px solid ${color}25`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 9, background: avatarBg, border: `1px solid ${avatarBorder}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 600, color }}>{custom ? "CS" : skill.agent.split(" ").map(w => w[0]).join("").slice(0, 2)}</span>
         </div>
 
@@ -264,8 +271,8 @@ function SkillCard({ skill, expanded, onToggle, onChat, soon, custom }: { skill:
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{skill.name}</span>
             {custom
-              ? <span style={{ fontSize: 10, fontFamily: T.mono, color: "#8B5CF6", background: "#8B5CF610", borderRadius: 100, padding: "1px 7px" }}>custom</span>
-              : <span style={{ fontSize: 10, fontFamily: T.mono, color, background: `${color}10`, borderRadius: 100, padding: "1px 7px" }}>{skill.agent}</span>}
+              ? <span style={{ fontSize: 10, fontFamily: T.mono, color: "#8B5CF6", background: customBadgeBg, borderRadius: 100, padding: "1px 7px" }}>custom</span>
+              : <span style={{ fontSize: 10, fontFamily: T.mono, color, background: badgeBg, borderRadius: 100, padding: "1px 7px" }}>{skill.agent}</span>}
           </div>
           <p style={{ fontSize: 12, color: T.textMid, lineHeight: 1.55, margin: 0 }}>{skill.description}</p>
         </div>
@@ -302,7 +309,7 @@ function SkillCard({ skill, expanded, onToggle, onChat, soon, custom }: { skill:
             onClick={onChat}
             style={{ alignSelf: "flex-start", background: T.text, color: T.bg, border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer" }}
           >
-            Ask ARIA to run this →
+            Run with getu.ai →
           </button>
         </div>
       )}
@@ -321,7 +328,7 @@ function ChevronIcon({ rotated }: { rotated: boolean }) {
 
 // ── Create Skill Modal ───────────────────────────────────────────────────────
 
-const AGENT_OPTIONS = ["ARIA", "Twitter Manager", "Reddit Scout", "Lead Finder", "Community Finder", "Content Studio"];
+const AGENT_OPTIONS = ["getu.ai", "Twitter Manager", "Reddit Scout", "Lead Finder", "Community Finder", "Content Studio"];
 
 function CreateSkillModal({ onClose, onSave }: { onClose: () => void; onSave: (skill: Skill) => void }) {
   const [name, setName] = useState("");

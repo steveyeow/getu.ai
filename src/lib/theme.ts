@@ -102,6 +102,7 @@ export function getGlobalStyles(mode: ThemeMode): string {
   @keyframes pulse   { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
   @keyframes blink   { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
   @keyframes spin    { to { transform: rotate(360deg); } }
+  @keyframes slideUpBar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 `;
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../../lib/theme.js";
 import { useTasks } from "../../hooks/useTasks.js";
+import ScheduleStrip, { type ScheduleData } from "./ScheduleStrip.js";
 
 type MissionStatus = "running" | "paused" | "completed" | "failed";
 
@@ -19,10 +20,13 @@ interface Mission {
   goal: string;
   status: MissionStatus;
   schedule: string;
+  scheduleData: ScheduleData;
   startedAt: string;
   stats: { label: string; value: number; suffix?: string }[];
   activity: ActivityEntry[];
 }
+
+const USER_TZ = "PST · UTC-8";
 
 const MISSIONS: Mission[] = [
   {
@@ -31,6 +35,15 @@ const MISSIONS: Mission[] = [
     title: "Grow @GetU_ai on Twitter/X",
     goal: "Manage daily content publishing, find & reply to signal posts, and engage with ICP accounts to build audience",
     status: "running", schedule: "Daily, 9am–6pm", startedAt: "12 days ago",
+    scheduleData: {
+      timezone: USER_TZ,
+      nextRunIn: "14m",
+      segments: [
+        { label: "Reply scan",       startHour: 9,  endHour: 18, frequency: "every 30 min" },
+        { label: "Thread publish",   startHour: 11, endHour: 12, frequency: "1× / day" },
+        { label: "ICP engagement",   startHour: 9,  endHour: 18, frequency: "every 2h" },
+      ],
+    },
     stats: [{ label: "POSTED", value: 47 }, { label: "REPLIES", value: 128 }, { label: "IMPRESSIONS", value: 12, suffix: "K" }],
     activity: [
       { text: "Published tweet: Top 3 GTM mistakes founders make", status: "done", time: "12m" },
@@ -44,6 +57,14 @@ const MISSIONS: Mission[] = [
     title: "Reddit Signal Monitoring & Engagement",
     goal: "Continuously scan target subreddits for buying-signal posts, draft helpful replies, and track engagement",
     status: "running", schedule: "Every 6 hours", startedAt: "8 days ago",
+    scheduleData: {
+      timezone: USER_TZ,
+      nextRunIn: "2h 14m",
+      segments: [
+        { label: "Subreddit scan",  startHour: 0, endHour: 24, frequency: "every 6h" },
+        { label: "Reply drafting",  startHour: 9, endHour: 18, frequency: "as needed" },
+      ],
+    },
     stats: [{ label: "SIGNALS", value: 34 }, { label: "REPLIED", value: 19 }, { label: "RELEVANCE", value: 82, suffix: "%" }],
     activity: [
       { text: "Found 3 new signal posts on r/startups", status: "done", time: "8m" },
@@ -57,6 +78,14 @@ const MISSIONS: Mission[] = [
     title: "ICP Lead Pipeline — Series A SaaS",
     goal: "Build a qualified lead pipeline of VP Marketing & Head of Growth at Seed–Series B SaaS companies across LinkedIn, Twitter & Reddit",
     status: "running", schedule: "Weekly, 50 leads/batch", startedAt: "5 days ago",
+    scheduleData: {
+      timezone: USER_TZ,
+      nextRunIn: "6d",
+      segments: [
+        { label: "LinkedIn search",   startHour: 9,  endHour: 12, frequency: "weekly · Mon" },
+        { label: "Outreach drafting", startHour: 13, endHour: 17, frequency: "weekly · Tue" },
+      ],
+    },
     stats: [{ label: "LEADS", value: 86 }, { label: "QUALIFIED", value: 52 }, { label: "OUTREACH", value: 18 }],
     activity: [
       { text: "Identified 4 VP Marketing leads on LinkedIn", status: "done", time: "38m" },
@@ -70,6 +99,14 @@ const MISSIONS: Mission[] = [
     title: "Map ICP Communities Across Platforms",
     goal: "Discover and rank Discord servers, Reddit subreddits, and Twitter communities where your target audience is most active",
     status: "running", schedule: "Every 12 hours", startedAt: "3 days ago",
+    scheduleData: {
+      timezone: USER_TZ,
+      nextRunIn: "5h 22m",
+      segments: [
+        { label: "Discord scan",     startHour: 0,  endHour: 24, frequency: "every 12h" },
+        { label: "Community ranking", startHour: 8, endHour: 18, frequency: "daily" },
+      ],
+    },
     stats: [{ label: "FOUND", value: 23 }, { label: "TOP TIER", value: 9 }, { label: "MEMBERS", value: 41, suffix: "K" }],
     activity: [
       { text: "Found 3 Discord servers for B2B SaaS founders", status: "done", time: "15m" },
@@ -218,6 +255,30 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
   );
   const [approvals, setApprovals] = useState<ApprovalItem[]>(INITIAL_APPROVALS);
 
+  // Trust policies: which (agent, type) combos auto-approve. Persisted to localStorage.
+  const [trustedKeys, setTrustedKeys] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("getu-trusted-skills");
+      if (raw) return new Set(JSON.parse(raw));
+    } catch { /* noop */ }
+    return new Set();
+  });
+
+  function persistTrust(next: Set<string>) {
+    try { localStorage.setItem("getu-trusted-skills", JSON.stringify(Array.from(next))); } catch { /* noop */ }
+  }
+
+  function trustKey(item: ApprovalItem): string { return `${item.agentName}::${item.type}`; }
+
+  function addTrust(item: ApprovalItem) {
+    setTrustedKeys(prev => {
+      const next = new Set(prev);
+      next.add(trustKey(item));
+      persistTrust(next);
+      return next;
+    });
+  }
+
   function togglePause(id: string) {
     setStatuses(prev => ({ ...prev, [id]: prev[id] === "running" ? "paused" : "running" }));
   }
@@ -226,6 +287,9 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
   }
   function handleApproval(id: string) {
     setApprovals(prev => prev.filter(a => a.id !== id));
+  }
+  function handleApproveAllByAgent(agentName: string) {
+    setApprovals(prev => prev.filter(a => a.agentName !== agentName));
   }
 
   const runningCount = Object.values(statuses).filter(s => s === "running").length;
@@ -254,7 +318,14 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
 
         {/* Action panel — pending approvals */}
         {approvals.length > 0 && (
-          <ActionPanel approvals={approvals} onApprove={handleApproval} onDismiss={handleApproval} />
+          <ActionPanel
+            approvals={approvals}
+            onApprove={handleApproval}
+            onDismiss={handleApproval}
+            onApproveAllByAgent={handleApproveAllByAgent}
+            onTrust={addTrust}
+            trustedKeys={trustedKeys}
+          />
         )}
 
         {/* Mission cards */}
@@ -280,10 +351,13 @@ export default function MissionCenter({ userId, onChat, onNavigate, onOpenConver
 
 // ── Action Panel — pending approvals across all missions ─────────────────────
 
-function ActionPanel({ approvals, onApprove, onDismiss }: {
+function ActionPanel({ approvals, onApprove, onDismiss, onApproveAllByAgent, onTrust, trustedKeys }: {
   approvals: ApprovalItem[];
   onApprove: (id: string) => void;
   onDismiss: (id: string) => void;
+  onApproveAllByAgent: (agentName: string) => void;
+  onTrust: (item: ApprovalItem) => void;
+  trustedKeys: Set<string>;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(approvals[0]?.id ?? null);
 
@@ -292,6 +366,14 @@ function ActionPanel({ approvals, onApprove, onDismiss }: {
       setExpandedId(approvals[0]?.id ?? null);
     }
   }, [approvals, expandedId]);
+
+  // Group approvals by agent for batch operations
+  const groupedByAgent = approvals.reduce<Record<string, { color: string; count: number }>>((acc, a) => {
+    if (!acc[a.agentName]) acc[a.agentName] = { color: a.agentColor, count: 0 };
+    acc[a.agentName].count += 1;
+    return acc;
+  }, {});
+  const batchableAgents = Object.entries(groupedByAgent).filter(([, v]) => v.count > 1);
 
   return (
     <div style={{ marginTop: 18 }}>
@@ -315,6 +397,20 @@ function ActionPanel({ approvals, onApprove, onDismiss }: {
         }}>
           {approvals.length}
         </span>
+        <div style={{ flex: 1 }} />
+        {batchableAgents.length > 0 && (
+          <div style={{ display: "flex", gap: 6 }}>
+            {batchableAgents.map(([agentName, info]) => (
+              <BatchApproveBtn
+                key={agentName}
+                agentName={agentName}
+                color={info.color}
+                count={info.count}
+                onClick={() => onApproveAllByAgent(agentName)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -326,6 +422,8 @@ function ActionPanel({ approvals, onApprove, onDismiss }: {
             onToggle={() => setExpandedId(prev => prev === item.id ? null : item.id)}
             onApprove={() => onApprove(item.id)}
             onDismiss={() => onDismiss(item.id)}
+            onTrust={() => onTrust(item)}
+            isTrusted={trustedKeys.has(`${item.agentName}::${item.type}`)}
           />
         ))}
       </div>
@@ -333,14 +431,50 @@ function ActionPanel({ approvals, onApprove, onDismiss }: {
   );
 }
 
-function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss }: {
+function BatchApproveBtn({ agentName, color, count, onClick }: { agentName: string; color: string; count: number; onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 5,
+        padding: "5px 11px", borderRadius: 100,
+        background: hov ? `${color}28` : `${color}14`,
+        border: `1px solid ${color}40`,
+        color, fontSize: 11, fontFamily: T.mono, fontWeight: 600,
+        cursor: "pointer", transition: "background .12s",
+      }}
+    >
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5L13 5" /></svg>
+      Approve all {count} from {agentName}
+    </button>
+  );
+}
+
+function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss, onTrust, isTrusted }: {
   item: ApprovalItem; expanded: boolean;
   onToggle: () => void; onApprove: () => void; onDismiss: () => void;
+  onTrust: () => void; isTrusted: boolean;
 }) {
   const [approveHov, setApproveHov] = useState(false);
   const [dismissHov, setDismissHov] = useState(false);
   const [rowHov, setRowHov] = useState(false);
+  const [trustChecked, setTrustChecked] = useState(false);
+  const [showDismissReason, setShowDismissReason] = useState(false);
+  const [dismissReason, setDismissReason] = useState("");
   const meta = APPROVAL_TYPE_META[item.type];
+
+  function handleApprove() {
+    if (trustChecked) onTrust();
+    onApprove();
+  }
+  function handleDismissSubmit() {
+    // In the real app, dismissReason would be sent to the agent's preference memory.
+    // For now, we just close the card.
+    onDismiss();
+  }
 
   return (
     <div
@@ -373,8 +507,22 @@ function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss }: {
 
         {/* Title + agent */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {item.title}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+              {item.title}
+            </div>
+            {isTrusted && (
+              <span title="Auto-approve enabled for this skill" style={{
+                fontSize: 9, fontFamily: T.mono, fontWeight: 600,
+                color: T.green, background: T.greenLight,
+                border: `1px solid ${T.greenMid}`,
+                borderRadius: 100, padding: "1px 7px",
+                display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0,
+              }}>
+                <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M3 8.5l3.5 3.5L13 5" /></svg>
+                Trusted
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
             <span style={{ fontSize: 10, fontFamily: T.mono, color: item.agentColor, fontWeight: 500 }}>{item.agentName}</span>
@@ -420,10 +568,76 @@ function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss }: {
             </div>
           )}
 
+          {/* Trust checkbox — auto-approve future similar items from this skill */}
+          {!isTrusted && (
+            <div onClick={e => { e.stopPropagation(); setTrustChecked(v => !v); }} style={{
+              display: "flex", alignItems: "center", gap: 8, marginTop: 10,
+              padding: "7px 10px", borderRadius: 6,
+              background: trustChecked ? `${item.agentColor}10` : "transparent",
+              border: `1px solid ${trustChecked ? item.agentColor + "30" : "transparent"}`,
+              cursor: "pointer", transition: "background .12s",
+            }}>
+              <span style={{
+                width: 14, height: 14, borderRadius: 3,
+                border: `1.5px solid ${trustChecked ? item.agentColor : T.borderMid}`,
+                background: trustChecked ? item.agentColor : "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                {trustChecked && <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M2.5 6l2.5 2.5 4.5-5" /></svg>}
+              </span>
+              <span style={{ fontSize: 11, color: trustChecked ? T.text : T.textMid, fontFamily: T.mono }}>
+                Auto-approve future "{APPROVAL_TYPE_META[item.type].label}" from {item.agentName}
+              </span>
+            </div>
+          )}
+
+          {/* Dismiss reason inline (only when expanded for dismiss flow) */}
+          {showDismissReason && (
+            <div onClick={e => e.stopPropagation()} style={{
+              display: "flex", alignItems: "center", gap: 6, marginTop: 8,
+              padding: "8px 10px", borderRadius: 7,
+              background: T.bg, border: `1px solid ${T.borderMid}`,
+            }}>
+              <input
+                autoFocus
+                value={dismissReason}
+                onChange={e => setDismissReason(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleDismissSubmit(); }}
+                placeholder="Why? (optional — helps the agent learn)"
+                style={{
+                  flex: 1, border: "none", outline: "none",
+                  background: "transparent", fontSize: 11,
+                  color: T.text, fontFamily: T.sans, padding: 0,
+                }}
+              />
+              <button
+                onClick={handleDismissSubmit}
+                style={{
+                  background: "#DC2626", color: "#fff", border: "none",
+                  borderRadius: 5, padding: "4px 10px",
+                  fontSize: 10, fontFamily: T.mono, fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => { setShowDismissReason(false); setDismissReason(""); }}
+                style={{
+                  background: "transparent", border: "none",
+                  color: T.textDim, fontSize: 10, fontFamily: T.mono,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
           {/* Action buttons */}
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }} onClick={e => e.stopPropagation()}>
             <button
-              onClick={onApprove}
+              onClick={handleApprove}
               onMouseEnter={() => setApproveHov(true)}
               onMouseLeave={() => setApproveHov(false)}
               style={{
@@ -437,12 +651,13 @@ function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss }: {
               }}
             >
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke={T.bg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5L13 5" /></svg>
-              Approve
+              {trustChecked ? "Approve & Trust" : "Approve"}
             </button>
             <button
-              onClick={onDismiss}
+              onClick={() => setShowDismissReason(true)}
               onMouseEnter={() => setDismissHov(true)}
               onMouseLeave={() => setDismissHov(false)}
+              disabled={showDismissReason}
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 padding: "7px 16px", borderRadius: 7,
@@ -450,7 +665,9 @@ function ApprovalCard({ item, expanded, onToggle, onApprove, onDismiss }: {
                 background: dismissHov ? "#DC2626" + "08" : "transparent",
                 color: dismissHov ? "#DC2626" : T.textMid,
                 fontSize: 11, fontFamily: T.mono, fontWeight: 500,
-                cursor: "pointer", transition: "all .15s",
+                cursor: showDismissReason ? "default" : "pointer",
+                opacity: showDismissReason ? 0.5 : 1,
+                transition: "all .15s",
               }}
             >
               Dismiss
@@ -697,6 +914,9 @@ function MissionCard({ mission, status, onTogglePause, onStop, onOpen }: {
         ))}
       </div>
 
+      {/* Schedule strip — clear timezone, active windows, and per-step frequency */}
+      <ScheduleStrip data={mission.scheduleData} color={mission.agentColor} />
+
       {/* Controls */}
       {!isCompleted && (
         <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${T.border}`, paddingTop: 10 }} onClick={e => e.stopPropagation()}>
@@ -714,10 +934,6 @@ function MissionCard({ mission, status, onTogglePause, onStop, onOpen }: {
             color={T.textDim}
             hoverColor="#DC2626"
           />
-          <div style={{ flex: 1 }} />
-          <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontFamily: T.mono, color: T.textDim, alignSelf: "center" }}>
-            <ClockIcon />{mission.schedule}
-          </span>
         </div>
       )}
 
@@ -726,8 +942,6 @@ function MissionCard({ mission, status, onTogglePause, onStop, onOpen }: {
         <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
           <CheckIcon color={mission.agentColor} />
           <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>Started {mission.startedAt}</span>
-          <div style={{ flex: 1 }} />
-          <span style={{ fontSize: 10, fontFamily: T.mono, color: T.textDim }}>{mission.schedule}</span>
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@ interface Props {
 
 const STEPS = [
   { label: "Initializing sandbox environment",   duration: 600 },
-  { label: "Provisioning ARIA orchestrator",      duration: 700 },
+  { label: "Provisioning getu.ai orchestrator",   duration: 700 },
   { label: "Loading agent toolkit",               duration: 600 },
 ];
 

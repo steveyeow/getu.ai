@@ -101,7 +101,7 @@ export default function Sidebar({
       {!collapsed && tasks.length > 0 && (
         <div style={{ padding: "10px 8px 4px" }}>
           <div style={{ fontSize: 10, color: T.textDim, fontFamily: T.mono, letterSpacing: 0.5, padding: "2px 10px 6px", textTransform: "uppercase" }}>
-            Recent missions
+            Recent Missions
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {tasks.slice(0, 5).map(task => (
@@ -219,7 +219,7 @@ function NewChatButton({ onClick }: { onClick: () => void }) {
       }}
     >
       <span style={{ fontSize: 16, lineHeight: 1, color: T.textMid }}>+</span>
-      New mission
+      New Mission
     </button>
   );
 }
@@ -231,7 +231,7 @@ function CollapsedNewChatButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      title="New mission"
+      title="New Mission"
       style={{
         display:      "flex",
         alignItems:   "center",

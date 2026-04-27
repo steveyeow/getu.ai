@@ -63,12 +63,12 @@ export default function Dashboard({ tasks, onChat }: Props) {
           </div>
         ) : tasks.length === 0 ? (
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "20px 20px", textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: T.textMid, marginBottom: 12 }}>No missions running yet. Chat with ARIA to get started.</p>
+            <p style={{ fontSize: 14, color: T.textMid, marginBottom: 12 }}>No Missions running yet. Chat with getu.ai to get started.</p>
             <button
               onClick={onChat}
               style={{ background: T.text, color: T.bg, border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, cursor: "pointer" }}
             >
-              Chat with ARIA →
+              Chat with getu.ai →
             </button>
           </div>
         ) : null}

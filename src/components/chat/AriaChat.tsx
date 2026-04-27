@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
-import { T } from "../../lib/theme.js";
+import { T, useTheme } from "../../lib/theme.js";
 import type { SidebarTab } from "../layout/Sidebar.js";
 
 export interface AgentChatInfo {
@@ -100,6 +100,7 @@ interface PlanItem {
 }
 
 type OngoingTaskStatus = "running" | "paused" | "stopped";
+export type ExecutionMode = "auto" | "plan" | "confirm";
 
 interface TaskCard {
   agent:  string;
@@ -145,7 +146,7 @@ function getAriaResponse(userMsg: string, turn: number): { text: string; planIte
 
 **Recommended GTM Strategy:**
 
-I suggest we deploy 5 agents simultaneously to cover your highest-impact channels:`,
+I'll activate 5 agents simultaneously to cover your highest-impact channels:`,
       planItems: [
         { agent: "Twitter Manager", color: "#D97706", action: "Find signal posts on X about manual GTM pain, reply helpfully, publish 2 threads/week" },
         { agent: "Reddit Scout",    color: "#FF4500", action: "Monitor r/SaaS, r/startups, r/marketing for buying signals and engage authentically" },
@@ -159,7 +160,7 @@ I suggest we deploy 5 agents simultaneously to cover your highest-impact channel
   const confirmWords = ["yes", "go", "confirm", "start", "do it", "sounds good", "let's go", "approve", "ok", "sure", "proceed", "lgtm"];
   if (confirmWords.some(w => userMsg.toLowerCase().includes(w))) {
     return {
-      text: "Deploying all 5 agents now. These are **ongoing tasks** — they'll keep running on schedule. You can pause, resume, or stop any agent from **Mission Control** or right here in chat.",
+      text: "Activating all 5 agents now. These are **ongoing Missions** — they'll keep running on schedule. You can pause, resume, or stop any agent from **Mission Control** or right here in chat.",
       taskCards: [
         { agent: "Twitter Manager",  color: "#D97706", title: "Find & reply to signal posts on X", schedule: "Runs daily, 9am–6pm", status: "running" },
         { agent: "Reddit Scout",     color: "#FF4500", title: "Scan r/SaaS and r/startups for signals", schedule: "Every 6 hours", status: "running" },
@@ -498,7 +499,20 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
   const [streamingText, setStreamingText] = useState("");
   const [streamingExtras, setStreamingExtras] = useState<{ planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; connectAccount?: { platform: string }; questions?: AgentQuestion[] }>({});
   const [selectedModel, setSelectedModel] = useState("deepseek-v3");
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>(() => {
+    try {
+      const saved = localStorage.getItem("getu-execution-mode");
+      if (saved === "auto" || saved === "plan" || saved === "confirm") return saved;
+    } catch { /* noop */ }
+    return "plan";
+  });
+
+  const handleModeChange = useCallback((m: ExecutionMode) => {
+    setExecutionMode(m);
+    try { localStorage.setItem("getu-execution-mode", m); } catch { /* noop */ }
+  }, []);
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const turnRef = useRef(0);
 
@@ -527,6 +541,47 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
   }, [initialPrompt]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingText]);
+
+  const [taskStatuses, setTaskStatuses] = useState<Record<string, OngoingTaskStatus>>({});
+
+  function handleTaskStatusChange(cardId: string, newStatus: OngoingTaskStatus) {
+    setTaskStatuses(prev => ({ ...prev, [cardId]: newStatus }));
+  }
+
+  const activeTasks = messages.flatMap((msg) =>
+    (msg.taskCards ?? [])
+      .map((tc, ti) => {
+        const cardId = `${msg.id}-task-${ti}`;
+        const currentStatus = taskStatuses[cardId] ?? tc.status;
+        return { ...tc, status: currentStatus, cardId };
+      })
+      .filter(tc => tc.status === "running" || tc.status === "paused")
+  );
+
+  const [taskCardVisible, setTaskCardVisible] = useState(true);
+
+  useEffect(() => {
+    if (activeTasks.length === 0) return;
+    const container = scrollRef.current;
+    if (!container) return;
+    function check() {
+      const firstActive = activeTasks[0];
+      if (!firstActive) return;
+      const el = container!.querySelector(`[data-task-card-id="${firstActive.cardId}"]`);
+      if (!el) { setTaskCardVisible(false); return; }
+      const cRect = container!.getBoundingClientRect();
+      const eRect = el.getBoundingClientRect();
+      setTaskCardVisible(eRect.bottom > cRect.top && eRect.top < cRect.bottom);
+    }
+    check();
+    container.addEventListener("scroll", check, { passive: true });
+    return () => container.removeEventListener("scroll", check);
+  }, [activeTasks.length > 0 ? activeTasks[0]?.cardId : null]);
+
+  function scrollToTaskCard(cardId: string) {
+    const el = scrollRef.current?.querySelector(`[data-task-card-id="${cardId}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   function resizeTextarea() {
     const el = textareaRef.current;
@@ -711,7 +766,17 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
                 </h2>
               </div>
             </div>
-            <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder="Tell me your product — I'll craft a GTM strategy and deploy the right agents." />
+            <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} large placeholder="Tell me your product — I'll craft a GTM strategy and activate the right Agents." />
+
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, paddingLeft: 4 }}>
+              <ModeSelector mode={executionMode} onChange={handleModeChange} compact />
+              <span style={{ fontSize: 11, color: T.textDim, fontFamily: T.mono }}>·</span>
+              <span style={{ fontSize: 11, color: T.textDim, fontFamily: T.mono }}>
+                {executionMode === "auto"    && "Agents will run autonomously and report back"}
+                {executionMode === "plan"    && "Agents will show their plan and wait for your approval"}
+                {executionMode === "confirm" && "Agents will ask before every action"}
+              </span>
+            </div>
 
             <div style={{ marginTop: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
@@ -734,10 +799,10 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg }}>
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 0" }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 0" }}>
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", gap: 20 }}>
           {messages.map(msg => (
-            <MessageBubble key={msg.id} message={msg} agentInfo={agentInfo} onViewMissions={() => onNavigate("missions")} onSubmitAnswers={handleQuestionAnswers} onApprove={() => submit("Approved")} />
+            <MessageBubble key={msg.id} message={msg} agentInfo={agentInfo} onViewMissions={() => onNavigate("missions")} onSubmitAnswers={handleQuestionAnswers} onApprove={() => submit("Approved")} taskStatuses={taskStatuses} onTaskStatusChange={handleTaskStatusChange} />
           ))}
           {streaming && (
             <StreamingBubble text={streamingText} extras={streamingExtras} agentInfo={agentInfo} />
@@ -745,11 +810,16 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
           <div ref={endRef} />
         </div>
       </div>
-      <div style={{ padding: "12px 24px 20px", borderTop: `1px solid ${T.border}` }}>
+      <div style={{ padding: "14px 24px 24px", borderTop: `1px solid ${T.border}` }}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
-          <div style={{ marginBottom: 8 }}>
+          <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
             <ModelSelector selected={selectedModel} onChange={setSelectedModel} />
+            <div style={{ width: 1, height: 14, background: T.border }} />
+            <ModeSelector mode={executionMode} onChange={handleModeChange} compact />
           </div>
+          {activeTasks.length > 0 && !taskCardVisible && (
+            <MissionStatusBar task={activeTasks[0]} onClickView={() => scrollToTaskCard(activeTasks[0].cardId)} />
+          )}
           <InputBox ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); resizeTextarea(); }} onKeyDown={handleKeyDown} onSubmit={() => submit()} streaming={streaming} placeholder={isAgentMode && agentInfo ? `Message ${agentInfo.name}…` : undefined} />
         </div>
       </div>
@@ -759,13 +829,13 @@ export default function AriaChat({ onNavigate, initialPrompt, onInitialPromptCon
 
 // ── Message Bubble ────────────────────────────────────────────────────────────
 
-function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, onApprove }: { message: ChatMessage; agentInfo?: AgentChatInfo; onViewMissions: () => void; onSubmitAnswers?: (answers: Record<string, string[]>) => void; onApprove?: () => void }) {
+function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, onApprove, taskStatuses, onTaskStatusChange }: { message: ChatMessage; agentInfo?: AgentChatInfo; onViewMissions: () => void; onSubmitAnswers?: (answers: Record<string, string[]>) => void; onApprove?: () => void; taskStatuses?: Record<string, OngoingTaskStatus>; onTaskStatusChange?: (cardId: string, status: OngoingTaskStatus) => void }) {
   const isUser = message.role === "user";
-  const nameLabel = agentInfo ? agentInfo.name : "ARIA";
-  const initials = agentInfo ? agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2) : "A";
+  const nameLabel = agentInfo ? agentInfo.name : "getu.ai";
+  const initials = agentInfo ? agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2) : "g";
   const avatarEl = !isUser && (agentInfo
     ? <div style={{ width: 28, height: 28, borderRadius: 28 * 0.28, background: `${agentInfo.color}18`, border: `1.5px solid ${agentInfo.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: agentInfo.color }}>{initials}</span></div>
-    : <AriaAvatar size={28} />);
+    : <GetuAvatar size={28} />);
 
   return (
     <div style={{ display: "flex", gap: 10, animation: "slideIn .2s ease", flexDirection: isUser ? "row-reverse" : "row" }}>
@@ -781,7 +851,10 @@ function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, on
         {message.planItems && <PlanCard items={message.planItems} />}
         {message.todoPlans && <TodoPlanCard items={message.todoPlans} agentColor={agentInfo?.color} onApprove={onApprove} />}
         {message.connectAccount && <ConnectAccountCard platform={message.connectAccount.platform} />}
-        {message.taskCards?.map((tc, i) => <TaskCreatedCard key={i} task={tc} onViewMissions={onViewMissions} />)}
+        {message.taskCards?.map((tc, i) => {
+          const cardId = `${message.id}-task-${i}`;
+          return <div key={i} data-task-card-id={cardId}><TaskCreatedCard task={tc} onViewMissions={onViewMissions} overrideStatus={taskStatuses?.[cardId]} onStatusChange={s => onTaskStatusChange?.(cardId, s)} /></div>;
+        })}
         {message.activities?.map((act, i) => <TwitterActivityCard key={i} activity={act} agentColor={agentInfo?.color} />)}
         {message.leads?.map((lead, i) => <LeadActivityCard key={i} lead={lead} agentColor={agentInfo?.color} />)}
         {message.geoAudits && <GeoAuditCard items={message.geoAudits} />}
@@ -794,11 +867,11 @@ function MessageBubble({ message, agentInfo, onViewMissions, onSubmitAnswers, on
 }
 
 function StreamingBubble({ text, extras, agentInfo }: { text: string; extras: { planItems?: PlanItem[]; taskCards?: TaskCard[]; todoPlans?: TodoPlan[]; connectAccount?: { platform: string }; questions?: AgentQuestion[] }; agentInfo?: AgentChatInfo }) {
-  const nameLabel = agentInfo ? agentInfo.name : "ARIA";
-  const initials = agentInfo ? agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2) : "A";
+  const nameLabel = agentInfo ? agentInfo.name : "getu.ai";
+  const initials = agentInfo ? agentInfo.name.split(" ").map(w => w[0]).join("").slice(0, 2) : "g";
   const avatarEl = agentInfo
     ? <div style={{ width: 28, height: 28, borderRadius: 28 * 0.28, background: `${agentInfo.color}18`, border: `1.5px solid ${agentInfo.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: agentInfo.color }}>{initials}</span></div>
-    : <AriaAvatar size={28} />;
+    : <GetuAvatar size={28} />;
 
   return (
     <div style={{ display: "flex", gap: 10 }}>
@@ -906,8 +979,9 @@ function TodoPlanCard({ items, agentColor, onApprove }: { items: TodoPlan[]; age
 
 // ── Ongoing task card (with pause/resume/stop controls) ──────────────────────
 
-function TaskCreatedCard({ task, onViewMissions }: { task: TaskCard; onViewMissions: () => void }) {
-  const [status, setStatus] = useState<OngoingTaskStatus>(task.status);
+function TaskCreatedCard({ task, onViewMissions, overrideStatus, onStatusChange }: { task: TaskCard; onViewMissions: () => void; overrideStatus?: OngoingTaskStatus; onStatusChange?: (s: OngoingTaskStatus) => void }) {
+  const status = overrideStatus ?? task.status;
+  const updateStatus = (s: OngoingTaskStatus) => onStatusChange?.(s);
   const initials = task.agent.split(" ").map(w => w[0]).join("").slice(0, 2);
   const isRunning = status === "running";
   const isPaused = status === "paused";
@@ -967,14 +1041,14 @@ function TaskCreatedCard({ task, onViewMissions }: { task: TaskCard; onViewMissi
       {/* Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
         <ChatControlBtn
-          onClick={() => setStatus(isRunning ? "paused" : "running")}
+          onClick={() => updateStatus(isRunning ? "paused" : "running")}
           icon={isRunning ? <ChatPauseIcon /> : <ChatPlayIcon />}
           label={isRunning ? "Pause" : "Resume"}
           color={isRunning ? T.textMid : T.green}
           hoverColor={isRunning ? "#D97706" : T.green}
         />
         <ChatControlBtn
-          onClick={() => setStatus("stopped")}
+          onClick={() => updateStatus("stopped")}
           icon={<ChatStopIcon />}
           label="Stop"
           color={T.textDim}
@@ -1030,6 +1104,61 @@ function renderMarkdown(text: string): React.ReactNode {
   return <>{nodes}</>;
 }
 
+// ── Floating Mission Status Bar ───────────────────────────────────────────────
+
+function MissionStatusBar({ task, onClickView }: { task: TaskCard & { cardId: string }; onClickView: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const isRunning = task.status === "running";
+
+  return (
+    <div
+      onClick={onClickView}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex", alignItems: "center",
+        padding: "5px 10px",
+        marginBottom: 6,
+        marginLeft: 12, marginRight: 12,
+        borderRadius: 8,
+        background: hovered ? T.surfaceHov : T.bg,
+        border: `1px solid ${T.border}`,
+        cursor: "pointer",
+        transition: "background .12s",
+        animation: "slideUpBar .15s ease",
+      }}
+    >
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 5,
+        fontSize: 11, fontFamily: T.mono, color: T.textMid,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        flex: 1, minWidth: 0,
+      }}>
+        <span style={{
+          width: 5, height: 5, borderRadius: "50%", flexShrink: 0,
+          background: isRunning ? T.green : "#D97706",
+          animation: isRunning ? "pulse 2s infinite" : "none",
+        }} />
+        {task.title}
+        <span style={{ color: T.textDim }}>·</span>
+        <span style={{ color: isRunning ? T.green : "#D97706", fontSize: 10, flexShrink: 0 }}>{isRunning ? "Running" : "Paused"}</span>
+      </span>
+
+      <span style={{
+        fontSize: 10, fontFamily: T.mono, flexShrink: 0, marginLeft: 8,
+        color: hovered ? T.text : T.textDim,
+        transition: "color .12s",
+        display: "flex", alignItems: "center", gap: 3,
+      }}>
+        View
+        <svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M8 12V4M4 8l4-4 4 4" />
+        </svg>
+      </span>
+    </div>
+  );
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 interface InputBoxProps {
@@ -1039,12 +1168,26 @@ interface InputBoxProps {
 }
 
 const InputBox = forwardRef<HTMLTextAreaElement, InputBoxProps>(
-  ({ value, onChange, onKeyDown, onSubmit, streaming, large, placeholder = "Message ARIA..." }, ref) => (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, background: T.surface, border: `1px solid ${T.border}`, borderRadius: large ? 16 : 12, padding: large ? "14px 16px" : "10px 12px", boxShadow: large ? "0 4px 24px var(--t-shadow, rgba(0,0,0,0.07))" : "0 2px 8px var(--t-shadow, rgba(0,0,0,0.04))" }}>
-      <textarea ref={ref} value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} rows={large ? 3 : 1}
-        style={{ flex: 1, border: "none", background: "transparent", fontSize: large ? 15 : 14, color: T.text, fontFamily: T.sans, resize: "none", lineHeight: 1.65, outline: "none", minHeight: large ? 72 : undefined }} />
+  ({ value, onChange, onKeyDown, onSubmit, streaming, large, placeholder = "Message getu.ai..." }, ref) => (
+    <div style={{
+      display: "flex", alignItems: "flex-end", gap: 10,
+      background: T.surface, border: `1px solid ${T.border}`,
+      borderRadius: large ? 16 : 14,
+      padding: large ? "14px 16px" : "12px 14px",
+      boxShadow: large ? "0 4px 24px var(--t-shadow, rgba(0,0,0,0.07))" : "0 2px 12px var(--t-shadow, rgba(0,0,0,0.05))",
+    }}>
+      <textarea ref={ref} value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} rows={large ? 3 : 2}
+        style={{ flex: 1, border: "none", background: "transparent", fontSize: large ? 15 : 14, color: T.text, fontFamily: T.sans, resize: "none", lineHeight: 1.65, outline: "none", minHeight: large ? 72 : 44 }} />
       <button onClick={onSubmit} disabled={streaming || !value.trim()}
-        style={{ background: value.trim() && !streaming ? T.text : T.border, color: value.trim() && !streaming ? T.bg : T.textDim, border: "none", borderRadius: large ? 10 : 8, width: large ? 38 : 32, height: large ? 38 : 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s", cursor: value.trim() && !streaming ? "pointer" : "default" }}>
+        style={{
+          background: value.trim() && !streaming ? T.text : T.border,
+          color: value.trim() && !streaming ? T.bg : T.textDim,
+          border: "none", borderRadius: large ? 10 : 10,
+          width: large ? 38 : 34, height: large ? 38 : 34,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          transition: "background .15s",
+          cursor: value.trim() && !streaming ? "pointer" : "default",
+        }}>
         {streaming ? <Spinner /> : <SendIcon />}
       </button>
     </div>
@@ -1161,23 +1304,128 @@ function ModelIcon() {
   );
 }
 
+// ── Execution Mode Selector ──────────────────────────────────────────────────
+
+const MODE_OPTIONS: { id: ExecutionMode; label: string; desc: string; color: string; dot: string }[] = [
+  { id: "auto",    label: "Auto",    desc: "Run autonomously, report back",       color: "#16A34A", dot: "🟢" },
+  { id: "plan",    label: "Plan",    desc: "Show me the plan first, I'll approve", color: "#D97706", dot: "🟡" },
+  { id: "confirm", label: "Confirm", desc: "Ask me before every action",            color: "#DC2626", dot: "🔴" },
+];
+
+function ModeSelector({ mode, onChange, compact }: { mode: ExecutionMode; onChange: (m: ExecutionMode) => void; compact?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = MODE_OPTIONS.find(m => m.id === mode) ?? MODE_OPTIONS[1];
+  const { mode: themeMode } = useTheme();
+  const isDark = themeMode === "dark";
+
+  useEffect(() => {
+    if (!open) return;
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        title={`Execution mode: ${current.label} — ${current.desc}`}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: isDark ? `${current.color}20` : `${current.color}10`,
+          border: `1px solid ${isDark ? current.color + "55" : current.color + "30"}`,
+          cursor: "pointer", borderRadius: 100,
+          padding: compact ? "3px 9px 3px 7px" : "4px 11px 4px 8px",
+          fontSize: compact ? 11 : 12, fontFamily: T.mono,
+          color: current.color,
+          transition: "background .15s, border-color .15s",
+        }}
+      >
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: current.color, display: "inline-block" }} />
+        <span style={{ fontWeight: 600 }}>{current.label}</span>
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>
+          <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 6px)", left: 0,
+          background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
+          boxShadow: "0 8px 32px var(--t-shadow, rgba(0,0,0,0.12))", padding: "6px",
+          minWidth: 280, zIndex: 100, animation: "fadeUp .15s ease",
+        }}>
+          <div style={{ padding: "6px 10px 8px", fontSize: 10, fontFamily: T.mono, color: T.textDim, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            Execution Mode
+          </div>
+          {MODE_OPTIONS.map(opt => {
+            const isSelected = opt.id === mode;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => { onChange(opt.id); setOpen(false); }}
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: 10, width: "100%",
+                  padding: "9px 10px", borderRadius: 7, border: "none",
+                  background: isSelected ? T.bg : "transparent",
+                  cursor: "pointer", transition: "background .1s",
+                  textAlign: "left",
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = T.bg; }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: opt.color, display: "inline-block", marginTop: 5, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.text, fontFamily: T.mono }}>{opt.label}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: T.textMid, marginTop: 2, lineHeight: 1.5 }}>{opt.desc}</div>
+                </div>
+                {isSelected && (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginTop: 2, flexShrink: 0 }}>
+                    <path d="M3 7l3 3 5-5.5" stroke={T.green} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Quick Action Card ─────────────────────────────────────────────────────────
 
 function QuickActionCard({ action, onRun }: { action: QuickAction; onRun: () => void }) {
   const [hov, setHov] = useState(false);
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
+  // In dark mode, tints need to be ~2× more saturated to match the perceived contrast of light mode.
+  const iconBg     = isDark ? `${action.color}30` : `${action.color}14`;
+  const iconBorder = isDark ? `${action.color}55` : `${action.color}30`;
+  const newBg      = isDark ? `${action.color}22` : `${action.color}0C`;
+  const newBorder  = isDark ? `${action.color}40` : `${action.color}18`;
+  const cardBg     = isDark
+    ? `linear-gradient(135deg, ${action.color}10 0%, ${T.surface} 55%)`
+    : T.surface;
+
   return (
     <button onClick={onRun} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ background: T.surface, border: `1px solid ${hov ? action.color + "50" : T.border}`, borderRadius: 10, padding: "14px 14px 12px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, transition: "border-color .15s, box-shadow .15s", boxShadow: hov ? `0 2px 12px ${action.color}12` : "none", position: "relative" }}>
+      style={{ background: cardBg, border: `1px solid ${hov ? action.color + (isDark ? "80" : "50") : T.border}`, borderRadius: 10, padding: "14px 14px 12px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, transition: "border-color .15s, box-shadow .15s", boxShadow: hov ? `0 2px 12px ${action.color}${isDark ? "30" : "12"}` : "none", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 26, height: 26, borderRadius: 7, background: `${action.color}14`, border: `1px solid ${action.color}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 26, height: 26, borderRadius: 7, background: iconBg, border: `1px solid ${iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <span style={{ fontFamily: T.mono, fontSize: 9, fontWeight: 600, color: action.color }}>{action.icon}</span>
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: action.color, lineHeight: 1.3 }}>{action.agent}</span>
-        {action.isNew && <span style={{ fontSize: 8, fontFamily: T.mono, fontWeight: 600, color: action.color, background: `${action.color}0C`, padding: "1px 5px", borderRadius: 3, border: `1px solid ${action.color}18`, lineHeight: 1.4 }}>NEW</span>}
+        {action.isNew && <span style={{ fontSize: 8, fontFamily: T.mono, fontWeight: 600, color: action.color, background: newBg, padding: "1px 5px", borderRadius: 3, border: `1px solid ${newBorder}`, lineHeight: 1.4 }}>NEW</span>}
       </div>
       <p style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, margin: 0, flex: 1 }}><span style={{ color: T.text, fontWeight: 500 }}>{action.label}.</span> {action.desc}</p>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <span style={{ fontSize: 10, fontFamily: T.mono, color: hov ? action.color : T.textDim, transition: "color .15s" }}>hire →</span>
+        <span style={{ fontSize: 10, fontFamily: T.mono, color: hov ? action.color : T.textDim, transition: "color .15s" }}>use →</span>
       </div>
     </button>
   );
@@ -1752,10 +2000,11 @@ function ConnectAccountCard({ platform }: { platform: string }) {
   );
 }
 
-function AriaAvatar({ size }: { size: number }) {
+function GetuAvatar({ size }: { size: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: size * 0.3, background: T.text, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <span style={{ color: T.green, fontFamily: T.mono, fontSize: size * 0.4, fontWeight: 500 }}>A</span>
+    <div style={{ width: size, height: size, borderRadius: size * 0.3, background: T.text, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, gap: 0 }}>
+      <span style={{ color: T.bg, fontFamily: T.mono, fontSize: size * 0.42, fontWeight: 500, letterSpacing: -0.5, lineHeight: 1 }}>g</span>
+      <span style={{ color: T.green, fontFamily: T.mono, fontSize: size * 0.42, fontWeight: 700, lineHeight: 1, marginLeft: -1 }}>.</span>
     </div>
   );
 }
